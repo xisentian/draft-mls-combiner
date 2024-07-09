@@ -48,12 +48,23 @@ author:
 
 
 --- abstract 
-This document describes a protocol for combining a standard MLS session with a postquantum MLS session to achieve hybrid security. 
+This document describes a protocol for combining a standard MLS session with a postquantum MLS session to achieve hybrid security. Specifically, we describe how to use the exporter secret of a MLS session using PQ-KEM and PQ-DSA to seed PQ confidentiality and authentication guarantees to an MLS session using traditional KEM and DSA algorithms. By seeding PQ updates into the traditional MLS session's key schedule, we can reduce the bandwidth and computational overhead associated with sending PQ updates by providing flexibility as to how frequently they occur. 
 
 --- middle 
 
 # Introduction
 
+A fully capable quantum adversary has the ability to break fundamental underlying cryptographic assumptions of classical Key Exchange Mechanisms (KEMs) and Digital Signature Algorithms (DSAs). This has led to the development of post quantum cryptographically secure KEMs and DSAs by the cryptographic research community which have been formally adopted by the National Institute of Standards and Technology (NIST) under the category of Module Lattice KEM (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms. While they provide PQ security, ML-KEM and ML-DSA have significantly worse overhead in terms of keyshares size, signature sizes, and CPU time  than their classical counterparts. A variety of hybrid security treatments have risen across IETF working groups to bridge the gap between performance and security to encourage the adoption of PQ security in existing protocols, including MLS protocol [RFC9420]. 
+
+Within the MLS working group, there are several topic areas requiring the use of post-quantum security extensions: 
+[Copied from draft-mahy-mls-xwing]
+1.  A straightforward MLS cipher suite that replaces a classical KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
+
+2. Versions of existing cipher suites that use post-quantum signatures; and specific guidelines on the construction, use, and validation of hybrid signatures.
+
+3. One or more mechanisms which reduce the bandwidth or storage requirements, or improve performance when using post-quantum algorithms (for example by updating post-quantum keys less frequently than classical keys, or by sharing portions of post-quantum keys across a large number of clients or groups.)
+
+This document addresses the third of theses work items. [Expand more]
 
 # About This Document
 
