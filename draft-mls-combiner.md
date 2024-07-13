@@ -50,6 +50,8 @@ author:
 --- abstract 
 This document describes a protocol for combining a standard MLS session with a postquantum MLS session to achieve hybrid security. Specifically, we describe how to use the exporter secret of a MLS session using PQ-KEM and PQ-DSA to seed PQ confidentiality and authentication guarantees to an MLS session using traditional KEM and DSA algorithms. By seeding PQ updates into the traditional MLS session's key schedule, we can reduce the bandwidth and computational overhead associated with sending PQ updates by providing flexibility as to how frequently they occur. 
 
+[**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]. 
+
 --- middle 
 
 # Introduction
@@ -64,7 +66,7 @@ Within the MLS working group, there are several topic areas requiring the use of
 
 3. One or more mechanisms which reduce the bandwidth or storage requirements, or improve performance when using post-quantum algorithms (for example by updating post-quantum keys less frequently than classical keys, or by sharing portions of post-quantum keys across a large number of clients or groups.)
 
-This document addresses the third of theses work items. [Expand more]
+This document addresses the third topic of theses work items. 
 
 # About This Document
 
@@ -98,20 +100,59 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage, Signature Key, Handshake Message, Private Message, Public Message, and RequiredCapabilities have the same meanings as in the [MLS protocol] <https://www.rfc-editor.org/rfc/rfc9420.html>.
 
+# Notation 
+
+**Classical MLS Session:** An MLS session that uses Diffie Hellman (DH) based KEM as described in RFC9180. 
+
+**Key Derivation Function (KDF):** A Hashed Message Authentication Code (HMAC)-based expand-and-extract key derivation function (HKDF) as described in RFC5869. 
+
+**Key Encapsulation Mechanism (KEM):** 
+
+**Post Quantum (PQ) MLS Session:** An MLS session that uses Modular Lattice (ML)-KEM as described by FIPS 203 from NIST. 
+
+**Session Combiner:** 
 
 
+# Protocol Execution 
 
-# Extension Execution 
+The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the classical session [**TODO** and book-keeping operations (for fork resiliency?)]. Both sessions may be treated as black-box interfaces. The combiner protocol adds mandatory synchronization operations that exports state information from the PQ to the classical session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the classical updates. 
+
+## Updates
+
+Updates MAY be *partial* or *full*. For a partial-update, only the classical session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, the PQ session update seeds the update for the classical session. Specifically, the sender updates the PQ session with an empty commit and derives a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its standard session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the standard commit to derive the new epochs in both sessions. 
+
+<This process brings entropy from the PQ session into the standard session.>
+
+[Insert diagram of a full update]
+
+## Adding and Removing Users
+Adding and removing users are done sequentially, first in the PQ session and then in the classical session following the spirit of a full-update whereby entropy from the PQ session is injected into the standard session. 
 
 
-### Issuing an Update
+### Adding a User
+
+User leaf nodes are first added to the PQ session with an Add proposal. The associated Commit and Welcome messages both include a PSK value generated from the `exporter_secret` of the new PQ epoch. Similar to the full-update, sender of the Add proposal will update its standard session's key schedule using the PSK. Then the sender generates an Add proposal in its standard session for the same user leaf nodes and includes a PreSharedKey proposal its Commit and PreSharedKeyID in its Welcome message.
+
+[Diagram of Adding a User]
+### External Joins
+
+### Removing a Group Member
+
+[**TODO:** Add a example execution]
+
+## Updates 
+
+## Message Sending
+Messages are sent only in the 
+
+## Epoch Agreement (Fork Resiliency) 
+
 
 
                                                                     Group
     A            B              G1  ...    Gn         Directory     Channel
     |Update(B,f) |              |          |              |           |
     |Commit(Upd) |              |          |              |           |
-    |Notify(B)   |              |          |              |           |
     +----------------------------------------------------------------->
     |            |              |          |              |           |
     |            |              |          |             Commit(Upd,f)|
