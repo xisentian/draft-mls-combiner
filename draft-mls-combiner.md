@@ -49,7 +49,7 @@ author:
 
 
 --- abstract 
-This document describes a protocol for combining a standard MLS session with a post-quantum MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ KEM and PQ signature algorithm, to seed PQ confidentiality and authentication guarantees into an MLS session using traditional KEM and signatures algorithms. By providing flexible support for on-demand traditional-only key updates or hybrid-PQC key updates, we can reduce the bandwidth and computational overhead associated with maintaining a PQC-only MLS session by providing flexibility as to how frequently they occur while maintaining a tighter traditional post-compromise security epoch length. 
+This document describes a protocol for combining a standard MLS session with a post-quantum MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ KEM and PQ signature algorithm, to seed PQ confidentiality and authentication guarantees into an MLS session using traditional KEM and signatures algorithms. By providing flexible support for on-demand traditional-only key updates (a.k.a. partial updates) or hybrid-PQC key updates (a.k.a. full updates), we can reduce the bandwidth and computational overhead associated with maintaining a PQC-only MLS session by providing flexibility as to how frequently they occur while maintaining a tighter traditional post-compromise security epoch length. 
 
 [**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]. 
 
@@ -120,7 +120,7 @@ The combiner protocol runs two MLS sessions in parallel, performing synchronizat
 
 ## Updates
 
-Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, the PQ session update seeds the update for the traditional session. Specifically, the sender updates the PQ session with an empty commit and derives a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its standard session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the standard commit to derive the new epochs in both sessions. 
+Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is also applied to the PQ session and then an exporter key is derived from the PQ session and injected as a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its traditional session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
 <This process brings entropy from the PQ session into the standard session.>
 
