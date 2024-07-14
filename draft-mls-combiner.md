@@ -1,6 +1,6 @@
 ---
-title: PQ MLS Combiner
-abbrev: PQCMLS
+title: Flexible Hybrid PQ MLS Combiner
+abbrev: HPQMLS
 docname: draft-hale-mls-combiner-00
 category: info
 
@@ -10,6 +10,7 @@ keyword:
   - security
   - authenticated key exchange
   - PCS
+  - Post-Quantum
 
 stand_alone: yes
 pi: [toc, sortrefs, symrefs]
@@ -32,14 +33,14 @@ author:
     name: "Joël Alwen"
     organization: "AWS"
     email: alwenjo@amazon.com
-  - ins: "M. Mularczyk"
-    name: "Marta Mularczyk" 
-    organization: "AWS" 
-    email: 
   - ins: "B. Hale"
     name: "Britta Hale"
     organization: "Naval Postgraduate School"
     email: britta.hale@nps.edu
+  - ins: "M. Mularczyk"
+    name: "Marta Mularczyk" 
+    organization: "AWS" 
+    email: mulmarta@amazon.ch
   - ins: "X. Tian"
     name: "Xisen Tian"
     organization: "Naval Postgraduate School"
@@ -48,7 +49,7 @@ author:
 
 
 --- abstract 
-This document describes a protocol for combining a standard MLS session with a postquantum MLS session to achieve hybrid security. Specifically, we describe how to use the exporter secret of a MLS session using PQ-KEM and PQ-DSA to seed PQ confidentiality and authentication guarantees to an MLS session using traditional KEM and DSA algorithms. By seeding PQ updates into the traditional MLS session's key schedule, we can reduce the bandwidth and computational overhead associated with sending PQ updates by providing flexibility as to how frequently they occur. 
+This document describes a protocol for combining a standard MLS session with a post-quantum MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ KEM and PQ signature algorithm, to seed PQ confidentiality and authentication guarantees into an MLS session using traditional KEM and signatures algorithms. By providing flexible support for on-demand traditional-only key updates or hybrid-PQC key updates, we can reduce the bandwidth and computational overhead associated with maintaining a PQC-only MLS session by providing flexibility as to how frequently they occur while maintaining a tighter traditional post-compromise security epoch length. 
 
 [**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]. 
 
