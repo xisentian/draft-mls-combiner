@@ -1,6 +1,6 @@
 ---
-title: PQ MLS Combiner
-abbrev: PQCMLS
+title: Hybrid PQ MLS Combiner
+abbrev: HPQMLS
 docname: draft-hale-mls-combiner-00
 category: info
 
@@ -10,6 +10,7 @@ keyword:
   - security
   - authenticated key exchange
   - PCS
+  - Post-Quantum
 
 stand_alone: yes
 pi: [toc, sortrefs, symrefs]
@@ -32,14 +33,14 @@ author:
     name: "Joël Alwen"
     organization: "AWS"
     email: alwenjo@amazon.com
-  - ins: "M. Mularczyk"
-    name: "Marta Mularczyk" 
-    organization: "AWS" 
-    email: 
   - ins: "B. Hale"
     name: "Britta Hale"
     organization: "Naval Postgraduate School"
     email: britta.hale@nps.edu
+  - ins: "M. Mularczyk"
+    name: "Marta Mularczyk" 
+    organization: "AWS" 
+    email: mulmarta@amazon.ch
   - ins: "X. Tian"
     name: "Xisen Tian"
     organization: "Naval Postgraduate School"
