@@ -61,11 +61,11 @@ A fully capable quantum adversary has the ability to break fundamental underlyin
 
 Within the MLS working group, there are several topic areas requiring the use of post-quantum security extensions: 
 [Copied from draft-mahy-mls-xwing]
-1.  A straightforward MLS cipher suite that replaces a classical KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
+1.  A straightforward MLS cipher suite that replaces a traditional KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
 
 2. Versions of existing cipher suites that use post-quantum signatures; and specific guidelines on the construction, use, and validation of hybrid signatures.
 
-3. One or more mechanisms which reduce the bandwidth or storage requirements, or improve performance when using post-quantum algorithms (for example by updating post-quantum keys less frequently than classical keys, or by sharing portions of post-quantum keys across a large number of clients or groups.)
+3. One or more mechanisms which reduce the bandwidth or storage requirements, or improve performance when using post-quantum algorithms (for example by updating post-quantum keys less frequently than traditional keys, or by sharing portions of post-quantum keys across a large number of clients or groups.)
 
 This document addresses the third topic of theses work items. 
 
@@ -103,31 +103,31 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 # Notation 
 
-**Classical MLS Session:** An MLS session that uses Diffie Hellman (DH) based KEM as described in RFC9180. 
+**Traditional MLS Session:** An MLS session that uses a Diffie-Hellman (DH) based KEM as described in RFC9180. 
 
 **Key Derivation Function (KDF):** A Hashed Message Authentication Code (HMAC)-based expand-and-extract key derivation function (HKDF) as described in RFC5869. 
 
 **Key Encapsulation Mechanism (KEM):** 
 
-**Post Quantum (PQ) MLS Session:** An MLS session that uses Modular Lattice (ML)-KEM as described by FIPS 203 from NIST. 
+**Post Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. 
 
 **Session Combiner:** 
 
 
 # Protocol Execution 
 
-The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the classical session [**TODO** and book-keeping operations (for fork resiliency?)]. Both sessions may be treated as black-box interfaces. The combiner protocol adds mandatory synchronization operations that exports state information from the PQ to the classical session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the classical updates. 
+The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the traditional session [**TODO** and book-keeping operations (for fork resiliency?)]. Both sessions may be treated as black-box interfaces. The combiner protocol adds mandatory synchronization operations that exports state information from the PQ to the traditional session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. 
 
 ## Updates
 
-Updates MAY be *partial* or *full*. For a partial-update, only the classical session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, the PQ session update seeds the update for the classical session. Specifically, the sender updates the PQ session with an empty commit and derives a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its standard session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the standard commit to derive the new epochs in both sessions. 
+Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, the PQ session update seeds the update for the traditional session. Specifically, the sender updates the PQ session with an empty commit and derives a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its standard session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the standard commit to derive the new epochs in both sessions. 
 
 <This process brings entropy from the PQ session into the standard session.>
 
 [Insert diagram of a full update]
 
 ## Adding and Removing Users
-Adding and removing users are done sequentially, first in the PQ session and then in the classical session following the spirit of a full-update whereby entropy from the PQ session is injected into the standard session. 
+Adding and removing users are done sequentially, first in the PQ session and then in the traditional session following the spirit of a full-update whereby entropy from the PQ session is injected into the standard session. 
 
 
 ### Adding a User
