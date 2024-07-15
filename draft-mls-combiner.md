@@ -116,59 +116,114 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 # Protocol Execution 
 
-The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the traditional session [**TODO** and book-keeping operations (for fork resiliency?)]. Both sessions may be treated as black-box interfaces. The combiner protocol adds mandatory synchronization operations that exports state information from the PQ to the traditional session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. 
+The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the traditional session [**TODO** and book-keeping operations (for fork resiliency?)]. The mandatory synchronization operations exports state information from the PQ to the traditional session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. Thus, for the most part, both sessions may be treated as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
 ## Updates
 
 Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is also applied to the PQ session and then an exporter key is derived from the PQ session and injected as a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its traditional session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
-<This process brings entropy from the PQ session into the standard session.>
+                                                                    Group
+    A            B              G1  ...    Gn         Directory     Channel
+   |              |              |              |                   |
+   |              |              | Update'(C)   |                   |
+   |              |              | PreSharedKey'(C)                 |
+   |              |              | Update(C)    |                   |
+   |              |              |--------------------------------->|
+   |              |              |              |                   |
+   |              |              |              | Update'(C)        |
+   |              |              |              | PreSharedKey'(C)  |
+   |              |              |              | Update(C)         |
+   |<---------------------------------------------------------------+
+   |              |<------------------------------------------------+
+   |              |              |<---------------------------------+
+   |              |              |              |                   |
+   |              | Commit'(Upd')|              |                   |
+   |              | Commit(Upd, PSK)            |                   |
+   |              |------------------------------------------------>|
+   |              |              |              |                   |
+   |              |              |              | Commit'(Upd')     |
+   |              |              |              | Commit(Upd, PSK)  |
+   |<---------------------------------------------------------------+
+   |              |<------------------------------------------------+
+   |              |              |<---------------------------------+
+                      Fig 1. Hybrid Full Update from Client C
 
-[Insert diagram of a full update]
 
 ## Adding and Removing Users
-Adding and removing users are done sequentially, first in the PQ session and then in the traditional session following the spirit of a full-update whereby entropy from the PQ session is injected into the standard session. 
+Adding and removing users are done sequentially, first in the PQ session and then in the traditional session following the spirit of a full-update whereby entropy from the PQ session is injected into the traditional session. 
 
 
 ### Adding a User
 
-User leaf nodes are first added to the PQ session with an Add proposal. The associated Commit and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. Similar to the full-update, the sender of the Add proposal will update its standard session's key schedule using the PSK generated by the `exporter_secret` of the new epoch in the PQ session. Then the sender generates an Add proposal in its standard session for the same user leaf nodes and includes a PreSharedKey proposal its Commit and PreSharedKeyID in its Welcome message.
+User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. Similar to the full-update, the sender of the Add proposal will update its standard session's key schedule using the PSK generated by the `exporter_secret` of the new epoch in the PQ session. Then the sender generates an Add proposal in its traditional session for the same user leaf nodes and includes a PreSharedKey proposal its Commit and PreSharedKeyID in its Welcome message. [**TODO: Please check the standard session join using a PSK! I'm thinking this might save some BW**]
+
+
+                                                                    Group
+   A              B              C          Directory            Channel
+   |              |              |              |                   |
+   |         KeyPackageC, KeyPackageC'          |                   |
+   |<-------------------------------------------+                   |
+   |              |              |              |                   |
+   |              |              |              | Add(AB->C)        |
+   |              |              |              | Add'(AB->C)       |
+   |              |              |              | Commit(Add)       |
+   |              |              |              | Commit'(Add')     |
+   +--------------------------------------------------------------->|
+   |              |              |              |                   |
+   |  Welcome(C)  |              |              |                   |
+   +---------------------------->|              |                   |
+   |  Welcome'(C) |              |              |                   |
+   +---------------------------->|              |                   |
+   |              |              |              |                   |
+   |              |              |              | Add(AB->C)        |
+   |              |              |              | Add'(AB->C)       |
+   |              |              |              | Commit(Add)       |
+   |              |              |              | Commit(Add')      |
+   |<---------------------------------------------------------------+
+   |              |<------------------------------------------------+
+   |              |              |<---------------------------------+
+   |              |              |              |                   |
+   |              |              | Update'(C)   |                   |
+   |              |              | PreSharedKey'(C)                 |
+   |              |              | Update(C)    |                   |
+   |              |              | Commit'(Upd')|                   |
+   |              |              | Commit(Upd, PSK)                 |
+   |              |              |--------------------------------->|
+   |              |              |              |                   |
+   |              |              |              | Update'(C)        |
+   |              |              |              | PreSharedKey'(C)  |
+   |              |              |              | Update(C)         |
+   |              |              |              | Commit'(Upd')     |
+   |              |              |              | Commit(Upd, PSK)  |
+   |<---------------------------------------------------------------+
+   |              |<------------------------------------------------+
+   |              |              |<---------------------------------+
+          Figure 2: Clients A and B creates a group with client C
+<!-- Add
+new epoch, then two welcome packages to add member (one pq one traditional), joiner will full update when they come online as their first update
+
+Remove
+new epoch, commit sequence in both sessions, 
+
+invitee invites joiner to two seperate groups - (certain extension, wire-format, or opaque value - two session ids, indicator bit specifying hybrid, to specify this) 
+-->
 
 [Diagram of Adding a User]
 ### External Joins
 
+External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session using the appropriate GroupInfo object to create an external Commit. Then, the new member MUST issue a full hybrid update as described in [Updates](#updates).
+
 ### Removing a Group Member
 
+User removals MUST be done in both PQ and traditional sessions followed by a full hybrid update as as described in [Updates](#updates). 
 [**TODO:** Add a example execution]
 
-## Updates 
 
-## Message Sending
-Messages are sent only in the 
+# Application Messages
 
-## Epoch Agreement (Fork Resiliency) 
+The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent using  the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
 
-
-
-                                                                    Group
-    A            B              G1  ...    Gn         Directory     Channel
-    |Update(B,f) |              |          |              |           |
-    |Commit(Upd) |              |          |              |           |
-    +----------------------------------------------------------------->
-    |            |              |          |              |           |
-    |            |              |          |             Commit(Upd,f)|
-    |            |              |          |             Update(B,f)  |
-    <-----------------------------------------------------------------+
-    |            |              <----------+--------------+-----------+
-    |            |              |          <--------------+-----------+
-    |            |              |          |            Commit(Upd, f)|
-    |            |              |          |              |Notify(B)  |
-    |            <--------------+----------+--------------+-----------+
-    |            |              |          |              |           |
-
-**Figure 1** Figure caption here
-
-
+## TODO? Epoch Agreement (Fork Resiliency) 
 
 
 # Security Considerations
@@ -176,14 +231,8 @@ Messages are sent only in the
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
 
-
-## Visibility to the Group 
-
-## Visability to Delivery Service
-
 # Extension Requirements to MLS
 
-## Leaf Node Contents
 
 # IANA Considerations 
 **[TODO]** Determine an extension code to use
