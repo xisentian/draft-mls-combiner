@@ -120,7 +120,7 @@ The combiner protocol runs two MLS sessions in parallel, performing synchronizat
 
 ## Updates
 
-Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is also applied to the PQ session and then an exporter key is derived from the PQ session and injected as a PreShared Key (PSK) from the `exporter_secret` of the new epoch. Then, the same sender updates its traditional session's group secret with the PQ PSK injected into the key schedule and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
+Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
                                                                     Group
       A            B              G1  ...    Gn         Directory     Channel
