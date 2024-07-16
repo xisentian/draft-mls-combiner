@@ -150,7 +150,8 @@ Updates MAY be *partial* or *full*. For a partial-update, only the traditional s
 
 
 ## Adding and Removing Users
-Adding and removing users are done sequentially, first in the PQ session and then in the traditional session following the spirit of a full-update whereby entropy from the PQ session is injected into the traditional session. 
+Adding and removing users is done per [RFC9420], except that the joiner is added into two groups: the PQ group and the traditional group. [TODO: add indicator that they are joining the hybrid session.]. 
+When the joiner issues its first update, it MUST perform a full update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.
 
 
 ### Adding a User
