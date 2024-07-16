@@ -126,8 +126,8 @@ Updates MAY be *partial* or *full*. For a partial-update, only the traditional s
       A                   B                        Channel
     |                     |                           |
     |                     | Update'(B)                |
-    |                     | PreSharedKeyID'(C)        |
-    |                     | Update(C)                 |
+    |                     | PreSharedKeyID'(B)        |
+    |                     | Update(B)                 |
     |                     |-------------------------->|
     |                     |                           |
     |                     |                Update'(B) |
@@ -144,7 +144,7 @@ Updates MAY be *partial* or *full*. For a partial-update, only the traditional s
     |                     |       Commit(Upd, PSKid') |
     |<------------------------------------------------+
     |                     |<--------------------------+
-                      Fig 1. Hybrid Full Update from Client C
+           Fig 1. Hybrid Full Update from Client B
 
 
 ## Adding and Removing Users
@@ -163,7 +163,7 @@ User leaf nodes are first added to the PQ session following the sequence describ
     A                    B          Directory            Channel
     |                    |              |                   |
     | KeyPackageB, KeyPackageB'         |                   |
-    |<----------------------------------+                  |
+    |<----------------------------------+                   |
     |                    |              |                   |
     |                    |              | Add(A->B)         |
     |                    |              | Add'(A->B)        |
@@ -207,7 +207,6 @@ new epoch, commit sequence in both sessions,
 invitee invites joiner to two seperate groups - (certain extension, wire-format, or opaque value - two session ids, indicator bit specifying hybrid, to specify this) 
 -->
 
-[Diagram of Adding a User]
 ### External Joins
 
 External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session using the appropriate GroupInfo object to create an external Commit. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLS flag [**TODO: Decide on flag/value**]. Then, the new member MUST issue a full hybrid update as described in [Updates](#updates).
