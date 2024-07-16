@@ -107,11 +107,10 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 **Key Derivation Function (KDF):** A Hashed Message Authentication Code (HMAC)-based expand-and-extract key derivation function (HKDF) as described in RFC5869. 
 
-**Key Encapsulation Mechanism (KEM):** 
+**Key Encapsulation Mechanism (KEM):**  A key transport protocol that allows two parties to obtain a shared secret based on the receiver's public key. 
 
 **Post Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. 
 
-**Session Combiner:** 
 
 
 # Protocol Execution 
