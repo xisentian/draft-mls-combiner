@@ -122,30 +122,28 @@ The combiner protocol runs two MLS sessions in parallel, performing synchronizat
 
 Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
-                                                                    Group
-      A            B              G1  ...    Gn         Directory     Channel
-    |              |              |              |                   |
-    |              |              | Update'(C)   |                   |
-    |              |              | PreSharedKey'(C)                 |
-    |              |              | Update(C)    |                   |
-    |              |              |--------------------------------->|
-    |              |              |              |                   |
-    |              |              |              | Update'(C)        |
-    |              |              |              | PreSharedKey'(C)  |
-    |              |              |              | Update(C)         |
-    |<---------------------------------------------------------------+
-    |              |<------------------------------------------------+
-    |              |              |<---------------------------------+
-    |              |              |              |                   |
-    |              | Commit'(Upd')|              |                   |
-    |              | Commit(Upd, PSK)            |                   |
-    |              |------------------------------------------------>|
-    |              |              |              |                   |
-    |              |              |              | Commit'(Upd')     |
-    |              |              |              | Commit(Upd, PSK)  |
-    |<---------------------------------------------------------------+
-    |              |<------------------------------------------------+
-    |              |              |<---------------------------------+
+                                                    Group
+      A                   B                        Channel
+    |                     |                           |
+    |                     | Update'(B)                |
+    |                     | PreSharedKeyID'(C)        |
+    |                     | Update(C)                 |
+    |                     |-------------------------->|
+    |                     |                           |
+    |                     |                Update'(B) |
+    |                     |        PreSharedKeyID'(B) |
+    |                     |                 Update(B) |
+    |<------------------------------------------------+
+    |                     |<--------------------------+
+    |                     |                           |
+    | Commit'(Upd')       |                           |
+    | Commit(Upd, PSKid') |                           |
+    |------------------------------------------------>|
+    |                     |                           |
+    |                     |             Commit'(Upd') |
+    |                     |       Commit(Upd, PSKid') |
+    |<------------------------------------------------+
+    |                     |<--------------------------+
                       Fig 1. Hybrid Full Update from Client C
 
 
