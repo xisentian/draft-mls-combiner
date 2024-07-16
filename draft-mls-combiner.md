@@ -144,7 +144,8 @@ Updates MAY be *partial* or *full*. For a partial-update, only the traditional s
     |                     |       Commit(Upd, PSKid') |
     |<------------------------------------------------+
     |                     |<--------------------------+
-           Fig 1. Hybrid Full Update from Client B
+           Fig 1. Hybrid Full Update from Client B. 
+           Messages with ' come from the PQ session. 
 
 
 ## Adding and Removing Users
@@ -165,21 +166,21 @@ User leaf nodes are first added to the PQ session following the sequence describ
     | KeyPackageB, KeyPackageB'         |                   |
     |<----------------------------------+                   |
     |                    |              |                   |
-    |                    |              | Add(A->B)         |
     |                    |              | Add'(A->B)        |
-    |                    |              | Commit(Add)       |
+    |                    |              | Add(A->B)         |
     |                    |              | Commit'(Add')     |
+    |                    |              | Commit(Add)       |
     +------------------------------------------------------>|
     |                    |              |                   |
-    |  Welcome(B)        |              |                   |
-    +------------------->|              |                   |
     |  Welcome'(B)       |              |                   |
     +------------------->|              |                   |
+    |  Welcome(B)        |              |                   |
+    +------------------->|              |                   |
     |                    |              |                   |
-    |                    |              | Add(A->B)         |
     |                    |              | Add'(A->B)        |
-    |                    |              | Commit(Add)       |
+    |                    |              | Add(A->B)         |
     |                    |              | Commit(Add')      |
+    |                    |              | Commit(Add)       |
     |<------------------------------------------------------+
     |                    |<---------------------------------+
     |                    |              |                   |
@@ -197,7 +198,8 @@ User leaf nodes are first added to the PQ session following the sequence describ
     |                    |              | Commit(Upd, PSKid)|
     |<------------------------------------------------------+
     |                    |<---------------------------------+
-          Figure 2: Client A creates a group with client B
+          Figure 2: Client A creates a group with client B.
+          Messages with ' come from the PQ session. 
 <!-- Add
 new epoch, then two welcome packages to add member (one pq one traditional), joiner will full update when they come online as their first update
 
