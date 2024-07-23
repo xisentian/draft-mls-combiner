@@ -157,7 +157,7 @@ When the joiner issues its first update, it MUST perform a full update, applying
 
 User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). The extensions field of the GroupInfo MUST contain a HPQMLS flag **[TODO: How to indicate two groups? GroupID+Ciphersuites? Information leakage considerations]**. Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session. Finally, in order to synchronize the group membership change, the new member MUST issue a full update sequence as described above. [**Note**: *Check commentted out remark which matches more closely with the construction in the paper*]
 
-**[Alternative Add with 1 commit]** The sender of the Add proposal will first add the joiner in the PQ session and generate a PSK from the `exporter_secret` in the new epoch. This results in a self-commit of the add and PSK proposal. It then sends a welcome message to the joiner in the PQ session. Then the sender initiates an External Join in the traditional session for the same joiner and includes a PreSharedKeyID in its Welcome message. The joiner will then self commit this add [**TODO: Please check the standard session join using a PSK! I'm thinking this might save some BW**].
+**[Alternative Add with 1 commit]** The sender of the Add proposal will first add the joiner in the PQ session and generate a PSK from the `exporter_secret` in the new epoch. This results in a self-commit of the add and PSK proposal. [**TODO: Finish description**]. The joiner SHALL make a full update as soon as possible after being added. 
 
 
                                                           Group
@@ -170,8 +170,7 @@ User leaf nodes are first added to the PQ session following the sequence describ
     | Commit'(Add', PSKid)              |                   |
     +------------------------------------------------------>|
     |                    |              |                   |
-    | Welcome'(B, PSKid) |              |                `:w
-       |
+    | Welcome'(B, PSKid) |              |                   | 
     +------------------->|              |                   |
     |                    |              |                   |
     |                    |              |        Add'(A->B) |
