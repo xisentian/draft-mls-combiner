@@ -116,41 +116,44 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 The combiner protocol runs two MLS sessions in parallel synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a PSK in the traditional session. This combination process is mandatory for commits to adds and removals to maintain synchronization between the sessions but is optional for other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. The combiner protocol design treats both sessions may be treated as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
 ## Commit Flow
-[**TODO**: Full (pair of commits which are *combined* - do the PSK exporter dance) vs Partial (traditional only) commits, then talk about rules for proposals (adds/removes and then everything else)]
+<!-- [**TODO**: Full (pair of commits which are *combined* - do the PSK exporter dance) vs Partial (traditional only) commits, then talk about rules for proposals (adds/removes and then everything else)]-->
 
-Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
+Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `exporter_secret` of the PQ session. To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit chain of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
 
 
 [**TODO**: Change this to show full commits ]
 
-                                                    Group
-      A                   B                        Channel
-    |                     |                           |
-    |                     | Update'(B)                |
-    |                     | Update(B, f)              |
-    |                     |-------------------------->|
-    |                     |                           |
-    |                     |                Update'(B) |
-    |                     |              Update(B, f) |
-    |<------------------------------------------------+
-    |                     |<--------------------------+
-    |                     |                           |
-    | Commit'(Upd')       |                           |
-    | PreSharedKeyID'()   |                           |
-    | Commit(Upd, f)      |                           |
-    |------------------------------------------------>|
-    |                     |                           |
-    |                     |             Commit'(Upd') |
-    |                     |         PreSharedKeyID'() |
-    |                     |            Commit(Upd, f) |
-    |<------------------------------------------------+
-    |                     |<--------------------------+
-           Fig 1. Hybrid Full Update from Client B. 
-           Messages with ' come from the PQ session. 
+                                                  Group
+      A                   B                      Channel
+    |                     |                        |
+    |                     | Upd'(B)                |
+    |                     | Upd(B, f)              |
+    |                     |----------------------->|
+    |                     |                        |
+    |                     |                Upd'(B) |
+    |                     |              Upd(B, f) |
+    |<---------------------------------------------+
+    |                     |<-----------------------+
+    |                     |                        |
+    | Commit'(Upd')       |                        |
+    | PreSharedKeyID'()   |                        |
+    | Commit(Upd, PSKID)  |                        |
+    |--------------------------------------------->|
+    |                     |                        |
+    |                     |          Commit'(Upd') |
+    |                     |      PreSharedKeyID'() |
+    |                     |     Commit(Upd, PSKID) |
+    |<---------------------------------------------+
+    |                     |<-----------------------+
+    Fig 1. Full Commit on Update proposal from Client B. 
+        Messages with ' come from the PQ session. 
+
+**Remark**: Fig 1 shows Client A accepting the update proposals from Client B as a FULL commit. The flag `f` in the classical update proposal `Upd(B, f)` indicates B's intention for a FULL commit to whomever commits to its proposal. [**Comment**: I think this is better than letting a client choose to full commit or partial commit on a set of proposals it receives b/c we let the originator of the proposals decide on the partial/fullness of the commit.]
 
 ## Welcome session validation 
-[**TODO**: The welcome messages should come from the same session through some kind of indicator of a dual session in the PQ Welcome. Group Context Extension to include the groupID of the other session? ]
+<!--[**TODO**: The welcome messages should come from the same session through some kind of indicator of a dual session in the PQ Welcome. Group Context Extension to include the groupID of the other session? ] -- XT: See the `gid` value added to the welcome message parameters.-->
 
+Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it's not sufficient to join only one or the other. Therefore, a Group Context Extension value `gid` indicating the GroupID and ciphersuites of the two sessions is added to the Welcome message in order to validate joining the combined sessions. 
 <!--## Adding and Removing Users
 Adding and removing users is done per [RFC9420], except that the joiner is added into two groups: the PQ group and the traditional group. [TODO: add indicator that they are joining the hybrid session.]. 
 When the joiner issues its first update, it MUST perform a FULL update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.-->
@@ -158,42 +161,39 @@ When the joiner issues its first update, it MUST perform a FULL update, applying
 
 ### Adding a User
 
-User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). The extensions field of the GroupInfo MUST contain a HPQMLS flag **[TODO: How to indicate two groups? GroupID+Ciphersuites? Information leakage considerations]**. Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session. Finally, in order to synchronize the group membership change, the new member MUST issue a FULL update sequence as described above. [**Note**: *Check commentted out remark which matches more closely with the construction in the paper*]
-
-**[Alternative Add with 1 commit]** The sender of the Add proposal will first add the joiner in the PQ session and generate a PSK from the `exporter_secret` in the new epoch. This results in a self-commit of the add and PSK proposal. [**TODO: Finish description**]. The joiner SHALL make a FULL update as soon as possible after being added. 
-
+User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL Commit combining sequence where a PreSharedKeyID proposal is additionally committed. It's worth mentioninging here that the joiner MUST issue a FULL commit as soon as possible to acheive PCS. 
+[**XT**: Pick up edits here]
 
                                                           Group
-    A                    B          Directory            Channel
-    |                    |              |                   |
-    | KeyPackageB, KeyPackageB'         |                   |
-    |<----------------------------------+                   |
-    |                    |              |                   |
-    | Add'(A->B)         |              |                   |
-    | Commit'(Add', PSKid)              |                   |
-    +------------------------------------------------------>|
-    |                    |              |                   |
-    | Welcome'(B, PSKid) |              |                   | 
-    +------------------->|              |                   |
-    |                    |              |                   |
-    |                    |              |        Add'(A->B) |
-    |                    |              |     Commit'(Add') |
-    |                    |              | PresharedKeyId(A) |
-    |<------------------------------------------------------+
-    |                    |<---------------------------------+
-    |                    |              |                   |
-    | Add(A->B)          |              |                   |
-    | PresharedKeyId(A)  |              |                   |
-    | Commit(Add, PSKid) |              |                   |
-    +------------------------------------------------------>|
-    |                    |              |                   |
-    | Welcome(B, PSKid)  |              |                   |
-    +------------------->|              |                   |
-    |                    |              |         Add(A->B) |
-    |                    |              | PresharedKeyId(A) |
-    |                    |              |Commit(Add, PSKid) |
-    |<------------------------------------------------------+
-    |                    |<---------------------------------+
+    A                         B          Directory            Channel
+    |                         |              |                   |
+    | KeyPackageB, KeyPackageB'              |                   |
+    |<---------------------------------------+                   |
+    |                         |              |                   |
+    | Add'(A->B)              |              |                   |
+    | Commit'(Add')           |              |                   |
+    +----------------------------------------------------------->|
+    |                         |              |                   |
+    | Welcome'(B, gid)        |              |                   | 
+    +------------------------>|              |                   |
+    |                         |              |                   |
+    |                         |              |        Add'(A->B) |
+    |                         |              |     Commit'(Add') |
+    |<-----------------------------------------------------------+
+    |                         |<---------------------------------+
+    |                         |              |                   |
+    | Add(A->B)               |              |                   |
+    | PresharedKeyId(A)       |              |                   |
+    | Commit(Add, PSKid)      |              |                   |
+    +----------------------------------------------------------->|
+    |                         |              |                   |
+    | Welcome(B, PSKid, gid)  |              |                   |
+    +------------------------>|              |                   |
+    |                         |              |         Add(A->B) |
+    |                         |              | PresharedKeyId(A) |
+    |                         |              |Commit(Add, PSKid) |
+    |<-----------------------------------------------------------+
+    |                         |<---------------------------------+
     
       Figure 2: 
       Client A creates a group with client B.
@@ -229,6 +229,7 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 [TODO:] PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
 [TODO:] Tighter windows for post compromise and FS windows. 
 [**TODO** book-keeping operations (for fork resiliency?)]. 
+[TODO: Information leakage with the `gid` value being added to welcome messages]
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
