@@ -49,15 +49,13 @@ author:
 
 
 --- abstract 
-This document describes a protocol for combining a standard MLS session with a post-quantum MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ KEM and PQ signature algorithm, to seed PQ confidentiality and authentication guarantees into an MLS session using traditional KEM and signatures algorithms. By providing flexible support for on-demand traditional-only key updates (a.k.a. partial updates) or hybrid-PQC key updates (a.k.a. full updates), we can reduce the bandwidth and computational overhead associated with maintaining a PQC-only MLS session by providing flexibility as to how frequently they occur while maintaining a tighter traditional post-compromise security epoch length. 
-
-[**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]. 
-
+This document describes a protocol for combining a standard MLS session with a post-quantum MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ ciphersuits to seed PQ guarantees into an MLS session using traditional ciphersuites. By supporting on-demand traditional-only key updates (a.k.a. PARTIAL updates) or hybrid-PQC key updates (a.k.a. FULL updates), we can reduce the bandwidth and computational overhead associated with meeting the frequent  key rotations while still providing PQ security.  
+<!--[**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]: Ans: Write out the doc first as PQ combiner and then we can talk about abstracting this as a general combiner-->
 --- middle 
 
 # Introduction
 
-A fully capable quantum adversary has the ability to break fundamental underlying cryptographic assumptions of traditional Key Encapsulation Mechanisms (KEMs) and Digital Signature Algorithms (DSAs). This has led to the development of post quantum (PQ) cryptographically secure KEMs and DSAs by the cryptographic research community which have been formally adopted by the National Institute of Standards and Technology (NIST), including the Module Lattice KEM (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms. While these provide PQ security, ML-KEM and ML-DSA have significantly worse overhead in terms of keyshares size, signature sizes, and CPU time than their traditional counterparts. Moreover, research vectors on side-channel attacks, etc., have motivated uses of hybrid-PQ combiners that draw security from both the underlying PQ and underlying traditional components. A variety of hybrid security treatments have arisen across IETF working groups to bridge the gap between performance and security to encourage the adoption of PQ security in existing protocols, including MLS protocol [RFC9420]. 
+A fully capable quantum adversary has the ability to break fundamental underlying cryptographic assumptions of traditional Key Encapsulation Mechanisms (KEMs) and Digital Signature Algorithms (DSAs). This has led to the development of post quantum (PQ) cryptographically secure KEMs and DSAs by the cryptographic research community which have been formally adopted by the National Institute of Standards and Technology (NIST), including the Module Lattice KEM (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms. While these provide PQ security, ML-KEM and ML-DSA have significantly worse overhead in terms of key size, signature sizes, and CPU time than their traditional counterparts. Moreover, research vectors on side-channel attacks, etc., have motivated uses of hybrid-PQ combiners that draw security from both the underlying PQ and underlying traditional components. A variety of hybrid security treatments have arisen across IETF working groups to bridge the gap between performance and security to encourage the adoption of PQ security in existing protocols, including MLS protocol [RFC9420]. 
 
 Within the MLS working group, there are several topic areas requiring the use of post-quantum security extensions: 
 [Copied from draft-mahy-mls-xwing]
@@ -119,7 +117,7 @@ The combiner protocol runs two MLS sessions in parallel, performing synchronizat
 
 ## Updates
 
-Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL-update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
+Updates MAY be *PARTIAL* or *FULL*. For a PARTIAL update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
 
 
@@ -222,6 +220,9 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 
 
 # Security Considerations
+[TODO:] Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarentees we get. 
+[TODO:] PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
+[TODO:] Tighter windows for post compromise and FS windows. 
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
