@@ -119,7 +119,7 @@ The combiner protocol runs two MLS sessions in parallel, performing synchronizat
 
 ## Updates
 
-Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a full-update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
+Updates MAY be *partial* or *full*. For a partial-update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL-update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
 
 
@@ -150,14 +150,14 @@ Updates MAY be *partial* or *full*. For a partial-update, only the traditional s
 
 ## Adding and Removing Users
 Adding and removing users is done per [RFC9420], except that the joiner is added into two groups: the PQ group and the traditional group. [TODO: add indicator that they are joining the hybrid session.]. 
-When the joiner issues its first update, it MUST perform a full update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.
+When the joiner issues its first update, it MUST perform a FULL update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.
 
 
 ### Adding a User
 
-User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). The extensions field of the GroupInfo MUST contain a HPQMLS flag **[TODO: How to indicate two groups? GroupID+Ciphersuites? Information leakage considerations]**. Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session. Finally, in order to synchronize the group membership change, the new member MUST issue a full update sequence as described above. [**Note**: *Check commentted out remark which matches more closely with the construction in the paper*]
+User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). The extensions field of the GroupInfo MUST contain a HPQMLS flag **[TODO: How to indicate two groups? GroupID+Ciphersuites? Information leakage considerations]**. Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session. Finally, in order to synchronize the group membership change, the new member MUST issue a FULL update sequence as described above. [**Note**: *Check commentted out remark which matches more closely with the construction in the paper*]
 
-**[Alternative Add with 1 commit]** The sender of the Add proposal will first add the joiner in the PQ session and generate a PSK from the `exporter_secret` in the new epoch. This results in a self-commit of the add and PSK proposal. [**TODO: Finish description**]. The joiner SHALL make a full update as soon as possible after being added. 
+**[Alternative Add with 1 commit]** The sender of the Add proposal will first add the joiner in the PQ session and generate a PSK from the `exporter_secret` in the new epoch. This results in a self-commit of the add and PSK proposal. [**TODO: Finish description**]. The joiner SHALL make a FULL update as soon as possible after being added. 
 
 
                                                           Group
@@ -192,51 +192,10 @@ User leaf nodes are first added to the PQ session following the sequence describ
     |<------------------------------------------------------+
     |                    |<---------------------------------+
     
-      Figure 2a **[ALT 1 Traditional Commit Vrsn]**: 
+      Figure 2: 
       Client A creates a group with client B.
       Messages with ' come from the PQ session. 
 
-
-                                                          Group
-    A                    B          Directory            Channel
-    |                    |              |                   |
-    | KeyPackageB, KeyPackageB'         |                   |
-    |<----------------------------------+                   |
-    |                    |              |                   |
-    |                    |              | Add'(A->B)        |
-    |                    |              | Add(A->B)         |
-    |                    |              | Commit'(Add')     |
-    |                    |              | Commit(Add)       |
-    +------------------------------------------------------>|
-    |                    |              |                   |
-    |  Welcome'(B)       |              |                   |
-    +------------------->|              |                   |
-    |  Welcome(B)        |              |                   |
-    +------------------->|              |                   |
-    |                    |              |                   |
-    |                    |              | Add'(A->B)        |
-    |                    |              | Add(A->B)         |
-    |                    |              | Commit(Add')      |
-    |                    |              | Commit(Add)       |
-    |<------------------------------------------------------+
-    |                    |<---------------------------------+
-    |                    |              |                   |
-    |                    | Update'(B)   |                   |
-    |                    | PreSharedKeyId'(B)               |
-    |                    | Update(B)    |                   |
-    |                    | Commit'(Upd')|                   |
-    |                    | Commit(Upd, PSKid)               |
-    |                    |--------------------------------->|
-    |                    |              |                   |
-    |                    |              | Update'(B)        |
-    |                    |              | PreSharedKeyID'(B)|
-    |                    |              | Update(B)         |
-    |                    |              | Commit'(Upd')     |
-    |                    |              | Commit(Upd, PSKid)|
-    |<------------------------------------------------------+
-    |                    |<---------------------------------+
-          Figure 2b: Client A creates a group with client B.
-          Messages with ' come from the PQ session. 
 <!-- Add
 new epoch, then two welcome packages to add member (one pq one traditional), joiner will full update when they come online as their first update
 
