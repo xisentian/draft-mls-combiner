@@ -55,11 +55,11 @@ This document describes a protocol for combining a standard MLS session with a p
 
 # Introduction
 
-A fully capable quantum adversary has the ability to break fundamental underlying cryptographic assumptions of traditional Key Encapsulation Mechanisms (KEMs) and Digital Signature Algorithms (DSAs). This has led to the development of post quantum (PQ) cryptographically secure KEMs and DSAs by the cryptographic research community which have been formally adopted by the National Institute of Standards and Technology (NIST), including the Module Lattice KEM (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms. While these provide PQ security, ML-KEM and ML-DSA have significantly worse overhead in terms of key size, signature sizes, and CPU time than their traditional counterparts. Moreover, research vectors on side-channel attacks, etc., have motivated uses of hybrid-PQ combiners that draw security from both the underlying PQ and underlying traditional components. A variety of hybrid security treatments have arisen across IETF working groups to bridge the gap between performance and security to encourage the adoption of PQ security in existing protocols, including MLS protocol [RFC9420]. 
+A fully capable quantum adversary has the ability to break fundamental underlying cryptographic assumptions of traditional Key Encapsulation Mechanisms (KEMs) and Digital Signature Algorithms (DSAs). This has led to the development of post quantum (PQ) cryptographically secure KEMs and DSAs by the cryptographic research community which have been formally adopted by the National Institute of Standards and Technology (NIST), including the Module Lattice KEM (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms. While these provide PQ security, ML-KEM and ML-DSA have significantly worse overhead in terms of public key size, signature sizes, ciphertext size, and CPU time than their traditional counterparts. Moreover, research arms on side-channel attacks, etc., have motivated uses of hybrid-PQ combiners that draw security from both the underlying PQ and underlying traditional components. A variety of hybrid security treatments have arisen across IETF working groups to bridge the gap between performance and security to encourage the adoption of PQ security in existing protocols, including MLS protocol [RFC9420]. 
 
-Within the MLS working group, there are several topic areas requiring the use of post-quantum security extensions: 
+Within the MLS working group, there are several topic areas that make use of post-quantum security extensions: 
 [Copied from draft-mahy-mls-xwing]
-1.  A straightforward MLS cipher suite that replaces a traditional KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
+1.  A straightforward MLS cipher suite that replaces a traditional KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
 
 2. Versions of existing cipher suites that use post-quantum signatures; and specific guidelines on the construction, use, and validation of hybrid signatures.
 
@@ -113,13 +113,15 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 # Protocol Execution 
 
-The combiner protocol runs two MLS sessions in parallel, performing synchronizations from the PQ session to the traditional session [**TODO** and book-keeping operations (for fork resiliency?)]. The mandatory synchronization operations exports state information from the PQ to the traditional session for group operations. This synchronization process is mandatory for adds and removals but is optional for updates to allow for flexibility. Due to the higher computational and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. Thus, for the most part, both sessions may be treated as black-box interfaces so we only highlight operations requiring synchronizations in this document.
+The combiner protocol runs two MLS sessions in parallel synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a PSK in the traditional session. This combination process is mandatory for commits to adds and removals to maintain synchronization between the sessions but is optional for other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ updates less frequently than the traditional updates. The combiner protocol design treats both sessions may be treated as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
-## Updates
+## Commit Flow
+[**TODO**: Full (pair of commits which are *combined* - do the PSK exporter dance) vs Partial (traditional only) commits, then talk about rules for proposals (adds/removes and then everything else)]
 
-Updates MAY be *PARTIAL* or *FULL*. For a PARTIAL update, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL update, an update is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
+Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the proposal-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and then an `exporter_secret` is derived from the PQ session. Then, the same sender updates its traditional session's group secret, injecting the PQ exporter_secret as a PSK into the key schedule, and commits the update with a PreSharedKey proposal (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit to derive the new epochs in both sessions. 
 
 
+[**TODO**: Change this to show full commits ]
 
                                                     Group
       A                   B                        Channel
@@ -146,9 +148,12 @@ Updates MAY be *PARTIAL* or *FULL*. For a PARTIAL update, only the traditional s
            Fig 1. Hybrid Full Update from Client B. 
            Messages with ' come from the PQ session. 
 
-## Adding and Removing Users
+## Welcome session validation 
+[**TODO**: The welcome messages should come from the same session through some kind of indicator of a dual session in the PQ Welcome. Group Context Extension to include the groupID of the other session? ]
+
+<!--## Adding and Removing Users
 Adding and removing users is done per [RFC9420], except that the joiner is added into two groups: the PQ group and the traditional group. [TODO: add indicator that they are joining the hybrid session.]. 
-When the joiner issues its first update, it MUST perform a FULL update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.
+When the joiner issues its first update, it MUST perform a FULL update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.-->
 
 
 ### Adding a User
@@ -223,6 +228,7 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 [TODO:] Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarentees we get. 
 [TODO:] PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
 [TODO:] Tighter windows for post compromise and FS windows. 
+[**TODO** book-keeping operations (for fork resiliency?)]. 
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
