@@ -115,9 +115,6 @@ The combiner protocol runs two MLS sessions in parallel, synchronizing their gro
 
 Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `exporter_secret` of the PQ session. To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
 
-
-[**TODO**: Change this to show full commits ]
-
                                                          Group
       A                       B                         Channel
     |                         |                            |
@@ -158,8 +155,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the 
     Fig 1b. FULL Commit to an Update proposal from Client B. 
         Messages with ' are sent in the the PQ session.
 
-**Remark**: Fig 1b shows Client A accepting the update proposals from Client B as a FULL commit. The flag `f` in the classical update proposal `Upd(B, f)` indicates B's intention for a FULL commit to whomever commits to its proposal. [**Comment**: I think this is better than letting a client choose to full commit or partial commit on a set of proposals it receives b/c we let the originator of the proposals decide on the partial/fullness of the commit.]
-
+**Remark**: Fig 1b shows Client A accepting the update proposals from Client B as a FULL commit. The flag `f` in the classical update proposal `Upd(B, f)` indicates B's intention for a FULL commit to whomever commits to its proposal. 
 
 ## Adding a User
 
@@ -195,7 +191,7 @@ User leaf nodes are first added to the PQ session following the sequence describ
 ### Welcome Message Validation 
 
 
-Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a HPQMLS Group Context Extension value indicating the GroupID and ciphersuites of the two sessions must be included in the Welcome message in order to validate joining the combined sessions. [**Comment**: It probably makes sense to put it in the group context extension (and not group info extension, which is only in the Welcome message). Then we can make sure e.g. that the PQ session isn't used to send messages.]
+Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a HPQMLS Group Context Extension value indicating the GroupID and ciphersuites of the two sessions must be included in the Welcome message in order to validate joining the combined sessions. 
 
 
 ### External Joins
@@ -211,7 +207,6 @@ User removals MUST be done in both PQ and traditional sessions followed by a ful
 
 The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent using  the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
 
-## TODO? Epoch Agreement (Fork Resiliency) 
 
 
 # Security Considerations
@@ -220,7 +215,8 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 **[TODO:]** Tighter windows for post compromise and FS windows. 
 **[TODO:]** book-keeping operations (for fork resiliency?). 
 **[TODO:]** Information leakage with the `gid` value being added to welcome messages
-**[TODO]:** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
+**[TODO:]** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
+**[TODO:]** Epoch Agreement (Fork Resiliency)
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
