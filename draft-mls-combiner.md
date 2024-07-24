@@ -203,7 +203,7 @@ new epoch, commit sequence in both sessions,
 invitee invites joiner to two seperate groups - (certain extension, wire-format, or opaque value - two session ids, indicator bit specifying hybrid, to specify this) 
 -->
 
-### Welcome session validation 
+### Welcome Message Validation 
 <!--[**TODO**: The welcome messages should come from the same session through some kind of indicator of a dual session in the PQ Welcome. Group Context Extension to include the groupID of the other session? ] -- XT: See the `gid` value added to the welcome message parameters.-->
 
 Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a Group Context Extension value `gid` indicating the GroupID and ciphersuites of the two sessions is added to the Welcome message in order to validate joining the combined sessions. [**Comment**: It probably makes sense to put it in the group context extension (and not group info extension, which is only in the Welcome message). Then we can make sure e.g. that the PQ session isn't used to send messages.]
