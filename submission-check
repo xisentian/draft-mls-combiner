@@ -1,0 +1,471 @@
+idnits 2.17.1 
+
+draft-mls-combiner.txt:
+
+  Showing Errors (**), Flaws (~~), Warnings (==), and Comments (--).
+  Errors MUST be fixed before draft submission.  Flaws SHOULD be fixed before draft submission.
+
+  Checking boilerplate required by RFC 5378 and the IETF Trust (see
+  https://trustee.ietf.org/license-info):
+  ----------------------------------------------------------------------------
+
+     No issues found here.
+
+  Checking nits according to https://www.ietf.org/id-info/1id-guidelines.txt:
+  ----------------------------------------------------------------------------
+
+  == Mismatching filename: the document gives the document name as
+     'draft-hale-mls-combiner-00', but the file name used is
+     'draft-mls-combiner'
+
+  == There is 1 instance of lines with non-ascii characters in the document.
+
+
+  Running in submission checking mode -- *not* checking nits according to
+  https://www.ietf.org/id-info/checklist .
+  ----------------------------------------------------------------------------
+
+
+     Summary: 0 errors (**), 0 flaws (~~), 2 warnings (==), 0 comments (--).
+
+--------------------------------------------------------------------------------
+
+
+2	MLS                                                             J. Alwen
+3	Internet-Draft                                                       AWS
+4	Intended status: Informational                                   B. Hale
+5	Expires: 25 January 2025                       Naval Postgraduate School
+6	                                                            M. Mularczyk
+7	                                                                     AWS
+8	                                                                 X. Tian
+9	                                               Naval Postgraduate School
+10	                                                            24 July 2024
+
+12	                    Flexible Hybrid PQ MLS Combiner
+13	                       draft-hale-mls-combiner-00
+
+15	Abstract
+
+17	   This document describes a protocol for combining a traditional MLS
+18	   session with a post-quantum (PQ) MLS session to achieve flexible and
+19	   efficient hybrid post-quantum security.  Specifically, we describe
+20	   how to use the exporter secret of a PQ MLS session, i.e. an MLS
+21	   session using a PQ ciphersuite, to seed PQ guarantees into an MLS
+22	   session using a traditional ciphersuite.  By supporting on-demand
+23	   traditional-only key updates (a.k.a.  PARTIAL updates) or hybrid-PQ
+24	   key updates (a.k.a.  FULL updates), we can reduce the bandwidth and
+25	   computational overhead associated with meeting the requirement of
+26	   frequent key rotations while still providing PQ security.
+
+28	Status of This Memo
+
+30	   This Internet-Draft is submitted in full conformance with the
+31	   provisions of BCP 78 and BCP 79.
+
+33	   Internet-Drafts are working documents of the Internet Engineering
+34	   Task Force (IETF).  Note that other groups may also distribute
+35	   working documents as Internet-Drafts.  The list of current Internet-
+36	   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+38	   Internet-Drafts are draft documents valid for a maximum of six months
+39	   and may be updated, replaced, or obsoleted by other documents at any
+40	   time.  It is inappropriate to use Internet-Drafts as reference
+41	   material or to cite them other than as "work in progress."
+
+43	   This Internet-Draft will expire on 25 January 2025.
+
+45	Copyright Notice
+
+47	   Copyright (c) 2024 IETF Trust and the persons identified as the
+48	   document authors.  All rights reserved.
+
+50	   This document is subject to BCP 78 and the IETF Trust's Legal
+51	   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+52	   license-info) in effect on the date of publication of this document.
+53	   Please review these documents carefully, as they describe your rights
+54	   and restrictions with respect to this document.  Code Components
+55	   extracted from this document must include Revised BSD License text as
+56	   described in Section 4.e of the Trust Legal Provisions and are
+57	   provided without warranty as described in the Revised BSD License.
+
+59	Table of Contents
+
+61	   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+62	   2.  About This Document . . . . . . . . . . . . . . . . . . . . .   3
+63	   3.  Status of this Memo . . . . . . . . . . . . . . . . . . . . .   3
+64	   4.  Copyright Notice  . . . . . . . . . . . . . . . . . . . . . .   4
+65	   5.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   4
+66	   6.  Notation  . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+67	   7.  The Combiner Protocol Execution . . . . . . . . . . . . . . .   5
+68	     7.1.  Commit Flow . . . . . . . . . . . . . . . . . . . . . . .   5
+69	     7.2.  Adding a User . . . . . . . . . . . . . . . . . . . . . .   7
+70	       7.2.1.  Welcome Message Validation  . . . . . . . . . . . . .   7
+71	       7.2.2.  External Joins  . . . . . . . . . . . . . . . . . . .   8
+72	       7.2.3.  Removing a Group Member . . . . . . . . . . . . . . .   8
+73	   8.  Application Messages  . . . . . . . . . . . . . . . . . . . .   8
+74	     8.1.  TODO?  Epoch Agreement (Fork Resiliency)  . . . . . . . .   8
+75	   9.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
+76	     9.1.  Transport Security  . . . . . . . . . . . . . . . . . . .   8
+77	   10. Extension Requirements to MLS . . . . . . . . . . . . . . . .   9
+78	   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
+79	   12. References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
+80	     12.1.  Normative References (i.e.  RFCs)  . . . . . . . . . . .   9
+81	     12.2.  Informational References . . . . . . . . . . . . . . . .   9
+82	   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   9
+83	   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   9
+
+85	1.  Introduction
+
+87	   A fully capable quantum adversary has the ability to break
+88	   fundamental underlying cryptographic assumptions of traditional Key
+89	   Encapsulation Mechanisms (KEMs) and Digital Signature Algorithms
+90	   (DSAs).  This has led to the development of post-quantum (PQ)
+91	   cryptographically secure KEMs and DSAs by the cryptographic research
+92	   community which have been formally adopted by the National Institute
+93	   of Standards and Technology (NIST), including the Module Lattice KEM
+94	   (ML-KEM) and Module Lattice DSA (ML-DSA) algorithms.  While these
+95	   provide PQ security, ML-KEM and ML-DSA have significantly worse
+96	   overhead in terms of public key size, signature size, ciphertext
+97	   size, and CPU time than their traditional counterparts.  Moreover,
+98	   research arms on side-channel attacks, etc., have motivated uses of
+99	   hybrid-PQ combiners that draw security from both the underlying PQ
+100	   and underlying traditional components.  A variety of hybrid security
+101	   treatments have arisen across IETF working groups to bridge the gap
+102	   between performance and security to encourage the adoption of PQ
+103	   security in existing protocols, including the MLS protocol [RFC9420].
+
+105	   Within the MLS working group, there are several topic areas that make
+106	   use of post-quantum security extensions: [Copied from draft-mahy-mls-
+107	   xwing] 1.  A straightforward MLS cipher suite that replaces a
+108	   traditional KEM with a hybrid post-quantum/traditional KEM.  Such a
+109	   cipher suite could be implemented as a drop-in replacement in many
+110	   MLS libraries without changes to any other part of the MLS stack.
+111	   The aim is for implementations to have a single KEM which would be
+112	   performant and work for the vast majority of implementations.  It
+113	   addresses the harvest-now / decrypt-later threat model using the
+114	   simplest, and most practicable solution available.
+
+116	   1.  Versions of existing cipher suites that use post-quantum
+117	       signatures; and specific guidelines on the construction, use, and
+118	       validation of hybrid signatures.
+
+120	   2.  One or more mechanisms which reduce the bandwidth or storage
+121	       requirements, or improve performance when using post-quantum
+122	       algorithms (for example by updating post-quantum keys less
+123	       frequently than traditional keys, or by sharing portions of post-
+124	       quantum keys across a large number of clients or groups.)
+
+126	   This document addresses the third topic of theses work items.
+
+128	2.  About This Document
+
+130	   This note is to be removed before publishing as an RFC.
+
+132	   Status information for this document may be found at _[Todo]_.
+
+134	   Discussion of this document takes place on the MLS Working Group
+135	   mailing list (mailto:mls@ietf.org), which is archived at
+136	   https://mailarchive.ietf.org/arch/browse/mls/.  Subscribe at
+137	   https://www.ietf.org/mailman/listinfo/mls/.
+
+139	   Source for this draft and an issue tracker can be found at
+140	   https://github.com/PairedMLS/draft-pairedMLS.
+
+142	3.  Status of this Memo
+
+144	   This Internet-Draft is submitted in full conformance with the
+145	   provisions of BCP 78 and BCP 79.
+
+147	   Internet-Drafts are working documents of the Internet Engineering
+148	   Task Force (IETF).  Note that other groups may also distribute
+149	   working documents as Internet-Drafts.  The list of current Internet-
+150	   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+152	   Internet-Drafts are draft documents valid for a maximum of six months
+153	   and may be updated, replaced, or obsoleted by other documents at any
+154	   time.  It is inappropriate to use Internet-Drafts as reference
+155	   material or to cite them other than as "work in progress."
+
+157	4.  Copyright Notice
+
+159	   Copyright (c) 2024 IETF Trust and the persons identified as the
+160	   document authors.  All rights reserved.
+
+162	   This document is subject to BCP 78 and the IETF Trust's Legal
+163	   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+164	   license-info) in effect on the date of publication of this document.
+165	   Please review these documents carefully, as they describe your rights
+166	   and restrictions with respect to this document.  Code Components
+167	   extracted from this document must include Revised BSD License text as
+168	   described in Section 4.e of the Trust Legal Provisions and are
+169	   provided without warranty as described in the Revised BSD License.
+
+171	5.  Terminology
+
+173	   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+174	   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+175	   "OPTIONAL" in this document are to be interpreted as described in BCP
+176	   14, [RFC2119], and [RFC8174] when, and only when, they appear in all
+177	   capitals, as shown here.
+
+179	   The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext,
+180	   KeyPackage, Signature Key, Handshake Message, Private Message, Public
+181	   Message, and RequiredCapabilities have the same meanings as in the
+182	   [MLS protocol] https://www.rfc-editor.org/rfc/rfc9420.html
+183	   (https://www.rfc-editor.org/rfc/rfc9420.html).
+
+185	6.  Notation
+
+187	   *Traditional MLS Session:* An MLS session that uses a Diffie-Hellman
+188	   (DH) based KEM as described in RFC9180.
+
+190	   *Key Derivation Function (KDF):* A Hashed Message Authentication Code
+191	   (HMAC)-based expand-and-extract key derivation function (HKDF) as
+192	   described in RFC5869.
+
+194	   *Key Encapsulation Mechanism (KEM):* A key transport protocol that
+195	   allows two parties to obtain a shared secret based on the receiver's
+196	   public key.
+
+198	   *Post Quantum (PQ) MLS Session:* An MLS session that uses a PQ-KEM
+199	   construction, such as described by FIPS 203 from NIST.
+
+201	7.  The Combiner Protocol Execution
+
+203	   The combiner protocol runs two MLS sessions in parallel,
+204	   synchronizing their group memberships.  The two sessions are combined
+205	   by exporting a secret from the post quantum session and importing it
+206	   as a Pre-Shared Key (PSK) in the traditional session.  This
+207	   combination process is mandatory for commits to add and remove
+208	   proposals, in order to maintain synchronization between the sessions.
+209	   However, it is optional for any other commits (e.g. to allow for
+210	   cheap traditional PCS key rotations).  Due to the higher
+211	   computational costs and output sizes of PQ KEM (and signature)
+212	   operations, it may be desirable to issue PQ combined commits less
+213	   frequently than the traditional-only commits.  The combiner protocol
+214	   design treats both sessions as black-box interfaces so we only
+215	   highlight operations requiring synchronizations in this document.
+
+217	7.1.  Commit Flow
+
+219	   Commits to proposals MAY be _PARTIAL_ or _FULL_. For a PARTIAL
+220	   commit, only the traditional session's epoch is updated following the
+221	   propose-commit sequence from Section 12 of RFC9420.  For a FULL
+222	   commit, a commit is first applied to the PQ session and another
+223	   commit is applied to the traditional session using a PSK derived from
+224	   the exporter_secret of the PQ session.  To ensure the correct PSK is
+225	   used, the sender includes information about the PSK in a PreSharedKey
+226	   proposal for in the traditional session's commit list of proposals
+227	   (8.4, 8.5 RFC9420).  Receivers process the PQ commit and the
+228	   traditional commit (which also includes a PSK proposal) to derive the
+229	   new epochs in both sessions.
+
+231	   [*TODO*: Change this to show full commits ]
+232	                                                        Group
+233	     A                       B                         Channel
+234	   |                         |                            |
+235	   | Commit'()               |                            |
+236	   | Commit(PreSharedKeyID)  |                            |
+237	   |----------------------------------------------------->|
+238	   |                         |                            |
+239	   |                         |                 Commit'()  |
+240	   |                         |    Commit(PreSharedKeyID)  |
+241	   |<-----------------------------------------------------+
+242	   |                         |<---------------------------+
+243	   Fig 1a. FULL Commit to an empty proposal list.
+244	       Messages with ' are sent in the the PQ session.
+245	       PreSharedKeyID identifies a PSK exported from the PQ
+246	       session and is included in the commit in the classical
+247	       session.
+
+249	                                                                Group
+250	     A                           B                             Channel
+251	   |                             |                                |
+252	   |                             | Upd'(B)                        |
+253	   |                             | Upd(B, f)                      |
+254	   |                             |------------------------------->|
+255	   |                             |                                |
+256	   |                             |                        Upd'(B) |
+257	   |                             |                      Upd(B, f) |
+258	   |<-------------------------------------------------------------+
+259	   |                             |<-------------------------------+
+260	   |                             |                                |
+261	   | Commit'(Upd')               |                                |
+262	   | Commit(Upd, PreSharedKeyID) |                                |
+263	   |------------------------------------------------------------->|
+264	   |                             |                                |
+265	   |                             |                  Commit'(Upd') |
+266	   |                             |    Commit(Upd, PreSharedKeyID) |
+267	   |<-------------------------------------------------------------+
+268	   |                             |<-------------------------------+
+269	   Fig 1b. FULL Commit to an Update proposal from Client B.
+270	       Messages with ' are sent in the the PQ session.
+
+272	   *Remark*: Fig 1b shows Client A accepting the update proposals from
+273	   Client B as a FULL commit.  The flag f in the classical update
+274	   proposal Upd(B, f) indicates B's intention for a FULL commit to
+275	   whomever commits to its proposal. [*Comment*: I think this is better
+276	   than letting a client choose to full commit or partial commit on a
+277	   set of proposals it receives b/c we let the originator of the
+278	   proposals decide on the partial/fullness of the commit.]
+
+280	7.2.  Adding a User
+
+282	   User leaf nodes are first added to the PQ session following the
+283	   sequence described in Section 3 of RFC9420 except using PQ algorithms
+284	   where HPKE algorithms exist.  For example, a PQ KeyPackage one
+285	   containing a PQ public key signed using a PQ DSA, must first be
+286	   published to the Delivery Service (DS).  Then the associated Add
+287	   Proposal, Commit, and Welcome messages will be sent and processed in
+288	   the PQ session according to Section 12 of RFC9420.  The same sequence
+289	   is repeated in the standard session except following the FULL Commit
+290	   combining sequence where a PreSharedKeyID proposal is additionally
+291	   committed.  The joiner MUST issue a FULL commit as soon as possible
+292	   to acheive PCS.  [*XT*: Pick up edits here]
+
+294	                                                     Key Package                                    Group
+295	A                                          B          Directory                                    Channel
+296	|                                          |              |                                           |
+297	|                                          | KeyPackageB' |                                           |
+298	|                                          |  KeyPackageB |                                           |
+299	|<--------------------------------------------------------+                                           |
+300	|                                          |              |                                           |
+301	| Commit'(Add'(KeyPackageB'))              |              |                                           |
+302	| Commit(Add(KeyPackageB), PreSharedKeyID) |              |                                           |
+303	+---------------------------------------------------------------------------------------------------->|
+304	|                                          |              |                                           |
+305	| Welcome'                                 |              |                                           |
+306	| Welcome(PreSharedKeyID)                  |              |                                           |
+307	+----------------------------------------->|              |                                           |
+308	|                                          |              |                                           |
+309	|                                          |              |  Commit'(Add'(KeyPackageB'))              |
+310	|                                          |              |  Commit(Add(KeyPackageB), PreSharedKeyID) |
+311	|<----------------------------------------------------------------------------------------------------+
+
+313	  Figure 2:
+314	  Client A adds client B to the group.
+315	  Messages with ' come from the PQ session. Processing Welcome and Commit in the traditional
+316	  sessio requires the PSK exported exported from the PQ session.
+
+318	7.2.1.  Welcome Message Validation
+
+320	   Since a client must join two sessions, the Welcome messages it
+321	   receives to each session must indicate that it is not sufficient to
+322	   join only one or the other.  Therefore, a HPQMLS Group Context
+323	   Extension value indicating the GroupID and ciphersuites of the two
+324	   sessions must be included in the Welcome message in order to validate
+325	   joining the combined sessions. [*Comment*: It probably makes sense to
+326	   put it in the group context extension (and not group info extension,
+327	   which is only in the Welcome message).  Then we can make sure e.g.
+
+329	   that the PQ session isn't used to send messages.]
+
+331	7.2.2.  External Joins
+
+333	   External joins are used by members who join a group without being
+334	   explicitly added (via a add-commit sequence) by another existing
+335	   member.  The external user MUST join both the PQ session and the
+336	   traditional session.  As stated previously, the GroupInfo used to
+337	   create the external commit MUST contain the HPQMLS Group Context
+338	   Extension value.  After joining, the new member MUST issue a FULL
+339	   update commit as described in Fig 1b.
+
+341	7.2.3.  Removing a Group Member
+
+343	   User removals MUST be done in both PQ and traditional sessions
+344	   followed by a full update as as described in Fig 1b.
+
+346	8.  Application Messages
+
+348	   The HPQMLS combiner serves only to provide hybrid PQ security to a
+349	   classical MLS session.  Application messages are therefore only sent
+350	   using the encryption_secret provided by the key schedule of the
+351	   classical session according to Section 15 of RFC9420.
+
+353	8.1.  TODO?  Epoch Agreement (Fork Resiliency)
+
+355	9.  Security Considerations
+
+357	   *[TODO:]* Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth
+358	   guarantees we get.  *[TODO:]* PQ Session with only PQ KEM (Conf) not
+359	   PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or
+360	   Hybrid Conf+Auth combiner *[TODO:]* Tighter windows for post
+361	   compromise and FS windows.  *[TODO:]* book-keeping operations (for
+362	   fork resiliency?).  *[TODO:]* Information leakage with the gid value
+363	   being added to welcome messages *[TODO]:* Consider adding a statement
+364	   to say how this combiner generalizes combining of two (or more?)
+365	   arbitrary MLS sessions.
+
+367	9.1.  Transport Security
+
+369	   Recommendations for preventing denial of service (DoS) attacks, or
+370	   restricting transmitted messages are inherited from MLS.
+371	   Furthermore, message integrity and confidentiality is, as for MLS,
+372	   protected.
+
+374	10.  Extension Requirements to MLS
+
+376	   Group Context Extension for HPQMLS SHALL be in the following format:
+
+378	     struct {
+379	       ProtocolVersion version = mls10;
+380	       CipherSuite cipher_suite;
+381	       opaque group_id<V>;
+382	       uint64 epoch;
+383	       opaque tree_hash<V>;
+384	       opaque confirmed_transcript_hash<V>;
+385	       Extension extensions<V>;
+386	     } GroupContext;
+
+388	     Extension hpqmls{
+389	         opaque trad_session_group_id<V>;
+390	         opaque PQ_session_group_id<V>;
+391	         CipherSuite trad_cipher_suite;
+392	         CipherSuite pq_cipher_suite;
+393	         uint64 trad_epoch;
+394	         uint64 pq_epoch;
+395	     }
+
+397	11.  IANA Considerations
+
+399	   *[TODO]* Determine an extension code to use
+
+401	12.  References
+
+403	12.1.  Normative References (i.e.  RFCs)
+
+405	   [1] https://www.rfc-editor.org/info/rfc9420 (https://www.rfc-
+406	   editor.org/info/rfc9420) "MLS RFC" [2] https://www.rfc-
+407	   editor.org/info/rfc5246 (https://www.rfc-editor.org/info/rfc5246)
+408	   "TLS RFC"
+
+410	12.2.  Informational References
+
+412	Acknowledgments
+
+414	   ## Contributors ## Authors
+
+416	Authors' Addresses
+
+418	   Joël Alwen
+419	   AWS
+420	   Email: alwenjo@amazon.com
+421	   Britta Hale
+422	   Naval Postgraduate School
+423	   Email: britta.hale@nps.edu
+
+425	   Marta Mularczyk
+426	   AWS
+427	   Email: mulmarta@amazon.ch
+
+429	   Xisen Tian
+430	   Naval Postgraduate School
+431	   Email: xisen.tian1@nps.edu
+
+
+
+
+
+
+
+

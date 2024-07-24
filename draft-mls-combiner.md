@@ -50,7 +50,6 @@ author:
 
 --- abstract 
 This document describes a protocol for combining a traditional MLS session with a post-quantum (PQ) MLS session to achieve flexible and efficient hybrid post-quantum security. Specifically, we describe how to use the exporter secret of a PQ MLS session, i.e. an MLS session using a PQ ciphersuite, to seed PQ guarantees into an MLS session using a traditional ciphersuite. By supporting on-demand traditional-only key updates (a.k.a. PARTIAL updates) or hybrid-PQ key updates (a.k.a. FULL updates), we can reduce the bandwidth and computational overhead associated with meeting the requirement of frequent key rotations while still providing PQ security.  
-<!--[**TODO**: *Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions*]: Ans: Write out the doc first as PQ combiner and then we can talk about abstracting this as a general combiner-->
 --- middle 
 
 # Introduction
@@ -84,11 +83,9 @@ Internet-Drafts are working documents of the Internet Engineering Task Force (IE
 
 Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."
 
-This Internet-Draft will expire on XX May 2024.
-
 # Copyright Notice 
 
-Copyright (c) 2023 IETF Trust and the persons identified as the document authors.  All rights reserved.
+Copyright (c) 2024 IETF Trust and the persons identified as the document authors.  All rights reserved.
 
 This document is subject to BCP 78 and the IETF Trust's Legal Provisions Relating to IETF Documents (https://trustee.ietf.org/license-info) in effect on the date of publication of this document. Please review these documents carefully, as they describe your rights and restrictions with respect to this document.  Code Components extracted from this document must include Revised BSD License text as described in Section 4.e of the Trust Legal Provisions and are provided without warranty as described in the Revised BSD License.
 
@@ -115,7 +112,6 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 The combiner protocol runs two MLS sessions in parallel, synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a Pre-Shared Key (PSK) in the traditional session. This combination process is mandatory for commits to add and remove proposals, in order to maintain synchronization between the sessions. However, it is optional for any other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ combined commits less frequently than the traditional-only commits. The combiner protocol design treats both sessions as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
 ## Commit Flow
-<!-- [**TODO**: Full (pair of commits which are *combined* - do the PSK exporter dance) vs Partial (traditional only) commits, then talk about rules for proposals (adds/removes and then everything else)]-->
 
 Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `exporter_secret` of the PQ session. To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
 
@@ -194,30 +190,21 @@ User leaf nodes are first added to the PQ session following the sequence describ
       Messages with ' come from the PQ session. Processing Welcome and Commit in the traditional
       sessio requires the PSK exported exported from the PQ session.
 
-<!-- Add
-new epoch, then two welcome packages to add member (one pq one traditional), joiner will full update when they come online as their first update
 
-Remove
-new epoch, commit sequence in both sessions, 
-
-invitee invites joiner to two seperate groups - (certain extension, wire-format, or opaque value - two session ids, indicator bit specifying hybrid, to specify this) 
--->
 
 ### Welcome Message Validation 
-<!--[**TODO**: The welcome messages should come from the same session through some kind of indicator of a dual session in the PQ Welcome. Group Context Extension to include the groupID of the other session? ] -- XT: See the `gid` value added to the welcome message parameters.-->
 
-Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a Group Context Extension value `gid` indicating the GroupID and ciphersuites of the two sessions is added to the Welcome message in order to validate joining the combined sessions. [**Comment**: It probably makes sense to put it in the group context extension (and not group info extension, which is only in the Welcome message). Then we can make sure e.g. that the PQ session isn't used to send messages.]
-<!--## Adding and Removing Users
-Adding and removing users is done per [RFC9420], except that the joiner is added into two groups: the PQ group and the traditional group. [TODO: add indicator that they are joining the hybrid session.]. 
-When the joiner issues its first update, it MUST perform a FULL update, applying both a PQ and traditional update as described above, using the exporter_secret and PSK proposal options.-->
+
+Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a HPQMLS Group Context Extension value indicating the GroupID and ciphersuites of the two sessions must be included in the Welcome message in order to validate joining the combined sessions. [**Comment**: It probably makes sense to put it in the group context extension (and not group info extension, which is only in the Welcome message). Then we can make sure e.g. that the PQ session isn't used to send messages.]
+
 
 ### External Joins
 
-External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session using the appropriate GroupInfo object to create an external Commit. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLS flag [**TODO: Decide on flag/value**]. Then, the new member MUST issue a full hybrid update as described in [Updates](#updates).
+External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLS Group Context Extension value. After joining, the new member MUST issue a FULL update commit as described in Fig 1b. 
 
 ### Removing a Group Member
 
-User removals MUST be done in both PQ and traditional sessions followed by a full hybrid update as as described in [Updates](#updates). 
+User removals MUST be done in both PQ and traditional sessions followed by a full update as as described in Fig 1b. 
 
 
 # Application Messages
@@ -228,25 +215,43 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 
 
 # Security Considerations
-[TODO:] Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarentees we get. 
-[TODO:] PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
-[TODO:] Tighter windows for post compromise and FS windows. 
-[**TODO** book-keeping operations (for fork resiliency?)]. 
-[TODO: Information leakage with the `gid` value being added to welcome messages]
+**[TODO:]** Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarantees we get. 
+**[TODO:]** PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
+**[TODO:]** Tighter windows for post compromise and FS windows. 
+**[TODO:]** book-keeping operations (for fork resiliency?). 
+**[TODO:]** Information leakage with the `gid` value being added to welcome messages
+**[TODO]:** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
 
 # Extension Requirements to MLS
+Group Context Extension for HPQMLS SHALL be in the following format: 
 
+      struct {
+        ProtocolVersion version = mls10;
+        CipherSuite cipher_suite;
+        opaque group_id<V>;
+        uint64 epoch;
+        opaque tree_hash<V>;
+        opaque confirmed_transcript_hash<V>;
+        Extension extensions<V>;
+      } GroupContext;
+
+      Extension hpqmls{
+          opaque trad_session_group_id<V>; 
+          opaque PQ_session_group_id<V>; 
+          CipherSuite trad_cipher_suite; 
+          CipherSuite pq_cipher_suite; 
+          uint64 trad_epoch; 
+          uint64 pq_epoch;   
+      }
 
 # IANA Considerations 
 **[TODO]** Determine an extension code to use
 
 # References
 
-[I-D.ietf-mls-protocol]
-Barnes, R., Beurdouche, B., Robert, R., Millican, J., Omara, E., and K. Cohn-Gordon. "The Messaging Layer Security (MLS) Protocol". Work in Progress, Internet-Draft, draft-ietf-mls-protocol-20, 27 March 2023. <https://datatracker.ietf.org/doc/html/draft-ietf-mls-protocol-20>
 
 
 ## Normative References (i.e. RFCs)
