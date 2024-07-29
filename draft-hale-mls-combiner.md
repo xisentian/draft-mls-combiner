@@ -58,6 +58,7 @@ A fully capable quantum adversary has the ability to break fundamental underlyin
 
 Within the MLS working group, there are several topic areas that make use of post-quantum security extensions: 
 [Copied from draft-mahy-mls-xwing]
+
 1.  A straightforward MLS cipher suite that replaces a traditional KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
 
 2. Versions of existing cipher suites that use post-quantum signatures; and specific guidelines on the construction, use, and validation of hybrid signatures.
@@ -160,7 +161,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the 
 ## Adding a User
 
 User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL Commit combining sequence where a PreSharedKeyID proposal is additionally committed. The joiner MUST issue a FULL commit as soon as possible to acheive PCS. 
-[**XT**: Pick up edits here]
+
 
                                                          Key Package                                    Group
     A                                          B          Directory                                    Channel
@@ -210,12 +211,19 @@ The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS
 
 
 # Security Considerations
+
 **[TODO:]** Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarantees we get. 
+
 **[TODO:]** PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
+
 **[TODO:]** Tighter windows for post compromise and FS windows. 
+
 **[TODO:]** book-keeping operations (for fork resiliency?). 
+
 **[TODO:]** Information leakage with the `gid` value being added to welcome messages
+
 **[TODO:]** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
+
 **[TODO:]** Epoch Agreement (Fork Resiliency)
 
 ## Transport Security 
