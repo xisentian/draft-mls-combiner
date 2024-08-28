@@ -58,6 +58,7 @@ A fully capable quantum adversary has the ability to break fundamental underlyin
 
 Within the MLS working group, there are several topic areas that make use of post-quantum security extensions: 
 [Copied from draft-mahy-mls-xwing]
+
 1.  A straightforward MLS cipher suite that replaces a traditional KEM with a hybrid post-quantum/traditional KEM.  Such a cipher suite could be implemented as a drop-in replacement in many MLS libraries without changes to any other part of the MLS stack. The aim is for implementations to have a single KEM which would be performant and work for the vast majority of implementations. It addresses the harvest-now / decrypt-later threat model using the simplest, and most practicable solution available.
 
 2. Versions of existing cipher suites that use post-quantum signatures; and specific guidelines on the construction, use, and validation of hybrid signatures.
@@ -106,6 +107,21 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 **Post Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. 
 
+# Modes of Operation
+
+Security needs vary by organizations and use-case specific risk tolerance or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: PQ confidentiality only or PQ confidentiality and authenticity. Note, PQ authenticity alone does not make sense for MLS group key agreement and no PQ security results in the use of this protocol as a generic combiner protocol for two MLS sessions with the same group members - both are out of scope for this document. The modes of operation are specified by the [**TODO**]`mode` flag in the HPQMLS extension. 
+
+[**TODO**: Extension flag or code for this? Or leave it to be interpreted by the ciphersuites?]
+
+## PQ Confidentiality Only
+
+The default mode of operation for the PQ session is in PQ Confidentiality Only mode. Since a cryptographically relevant quantum computer (CRQC) has not been publicly revealed, the harvest-now-decrypt-later attack suffices as the threat model for the HPQMLS combiner. Under this lense, PQ confidentiality with traditional authenticity are appropriate minimum security goals. Therefore, it follows that the PQ session can be defined as using PQ KEM and classical signatures. 
+
+
+
+## PQ Confidentiality + Authenticity 
+
+The secondary mode of operation for the PQ session is the PQ Confidentiality and Authenticity mode. If a CRQC exists, the default mode would be insufficient to guarantee confidentiality and authenticity of the group key. Therefore, in this mode the PQ session would use PQ signatures as well as PQ KEM ciphersuites. 
 
 # The Combiner Protocol Execution 
 
@@ -191,32 +207,31 @@ User leaf nodes are first added to the PQ session following the sequence describ
 ### Welcome Message Validation 
 
 
-Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a HPQMLS Group Context Extension value indicating the GroupID and ciphersuites of the two sessions must be included in the Welcome message in order to validate joining the combined sessions. 
+Since a client must join two sessions, the Welcome messages it receives to each session must indicate that it is not sufficient to join only one or the other. Therefore, a HPQMLS Group Context Extension value indicating the GroupID and ciphersuites of the two sessions MUST be included in the Welcome message in order to validate joining the combined sessions. After joining, the new member MUST issue a FULL update commit as described in Fig 1b. 
 
 
 ### External Joins
 
 External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLS Group Context Extension value. After joining, the new member MUST issue a FULL update commit as described in Fig 1b. 
 
-### Removing a Group Member
+## Removing a Group Member
 
 User removals MUST be done in both PQ and traditional sessions followed by a full update as as described in Fig 1b. 
 
-
-# Application Messages
+## Application Messages
 
 The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent using  the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
 
 
-
 # Security Considerations
-**[TODO:]** Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarantees we get. 
-**[TODO:]** PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
+
+**[Done:]** Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarantees we get. 
+**[Done:]** PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
 **[TODO:]** Tighter windows for post compromise and FS windows. 
 **[TODO:]** book-keeping operations (for fork resiliency?). 
 **[TODO:]** Information leakage with the `gid` value being added to welcome messages
-**[TODO:]** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
-**[TODO:]** Epoch Agreement (Fork Resiliency)
+**[Done:]** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
+**[TODO:]** Epoch Agreement (Fork Resiliency) - not sure if this is in scope...
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
@@ -237,6 +252,7 @@ Group Context Extension for HPQMLS SHALL be in the following format:
       Extension hpqmls{
           opaque trad_session_group_id<V>; 
           opaque PQ_session_group_id<V>; 
+          bool mode; 
           CipherSuite trad_cipher_suite; 
           CipherSuite pq_cipher_suite; 
           uint64 trad_epoch; 
@@ -256,7 +272,7 @@ Group Context Extension for HPQMLS SHALL be in the following format:
 
 
 ## Informational References 
-
+J. Alwen, M. Mularczyk, Y. Tselekounis. "Fork-Resilient Continuous Group Key Agreement", 2023. <https://eprint.iacr.org/2023/394>
 
 <!--# Appendices -->
 
