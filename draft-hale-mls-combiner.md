@@ -114,15 +114,21 @@ Security needs vary by organizations and use-case specific risk tolerance or con
 
 [**TODO**: Extension flag or code for this? Or leave it to be interpreted by the ciphersuites?]
 
+## PQ Entity Authenticity 
+[Need it in both sessions]
+
 ## PQ Confidentiality Only
 
 The default mode of operation for the PQ session is in PQ Confidentiality Only mode. Since a cryptographically relevant quantum computer (CRQC) has not been publicly revealed, the harvest-now-decrypt-later attack suffices as the threat model for the HPQMLS combiner. Under this lense, PQ confidentiality with traditional authenticity are appropriate minimum security goals. Therefore, it follows that the PQ session can be defined as using PQ KEM and classical signatures. 
 
 
 
-## PQ Confidentiality + Authenticity 
+## PQ Confidentiality + Authenticity (for updates)
 
-The secondary mode of operation for the PQ session is the PQ Confidentiality and Authenticity mode. If a CRQC exists, the default mode would be insufficient to guarantee confidentiality and authenticity of the group key. Therefore, in this mode the PQ session would use PQ signatures as well as PQ KEM ciphersuites. 
+The secondary mode of operation for the PQ session is the PQ Confidentiality and Authenticity mode. If a CRQC exists, the default mode would be insufficient to guarantee confidentiality and authenticity of the group key. Therefore, in this mode the PQ session would use PQ signatures as well as PQ KEM ciphersuites. [BH: This only gives PQ authenticity on PQ updates]
+
+## PQ Confidentiality + Authenticity (Data)
+
 
 # The Combiner Protocol Execution 
 
@@ -247,6 +253,8 @@ Recommendations for preventing denial of service (DoS) attacks, or restricting t
 # Extension Requirements to MLS
 Group Context Extension for HPQMLS SHALL be in the following format: 
 
+[BH: What's in the clear here? Trad session vs T session notation]
+
       struct {
         ProtocolVersion version = mls10;
         CipherSuite cipher_suite;
@@ -258,12 +266,12 @@ Group Context Extension for HPQMLS SHALL be in the following format:
       } GroupContext;
 
       Extension hpqmls{
-          opaque trad_session_group_id<V>; 
+          opaque t_session_group_id<V>; 
           opaque PQ_session_group_id<V>; 
           bool mode; 
-          CipherSuite trad_cipher_suite; 
+          CipherSuite t_cipher_suite; 
           CipherSuite pq_cipher_suite; 
-          uint64 trad_epoch; 
+          uint64 t_epoch; 
           uint64 pq_epoch;   
       }
 
