@@ -100,7 +100,11 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 # Notation 
 
-**Traditional MLS Session:** An MLS session that uses a Diffie-Hellman (DH) based KEM as described in RFC9180. 
+We use terms from from MLS [RFC9420]. Below, we've restated relevant terms and define new ones: 
+
+**Application Message:** A PrivateMessage carrying application data.
+
+**Handshake Message:** A PublicMessage or PrivateMessage carrying an MLS Proposal or Commit object, as opposed to application data.
 
 **Key Derivation Function (KDF):** A Hashed Message Authentication Code (HMAC)-based expand-and-extract key derivation function (HKDF) as described in RFC5869. 
 
@@ -108,28 +112,38 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 **Post Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. 
 
+**Traditional MLS Session:** An MLS session that uses a Diffie-Hellman (DH) based KEM as described in RFC9180. 
+
+
+
 # Modes of Operation
 
-Security needs vary by organizations and use-case specific risk tolerance or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: PQ confidentiality only or PQ confidentiality and authenticity. Note, PQ authenticity alone does not make sense for MLS group key agreement and no PQ security results in the use of this protocol as a generic combiner protocol for two MLS sessions with the same group members - both are out of scope for this document. The modes of operation are specified by the [**TODO**]`mode` flag in the HPQMLS extension. 
+Security needs vary by organizations and use-case specific risk tolerance and/or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: PQ confidentiality only or PQ confidentiality and authenticity. By PQ Confidentiality, we refer to the security provided by PQ KEM protected handshake messages in MLS. By PQ authenticity, we refer to non-repudiation guarantees provided by PQ signatures for handshake and application messages. 
 
+The modes of operation are specified by the [**TODO**]`mode` flag in the HPQMLS extension and are listed ordered by least amount of PQ security to most. 
+
+
+<!--Note, PQ authenticity alone (without confidentiality) does not make sense for MLS group key agreement and the use of this protocol as a generic combiner protocol for two MLS sessions - both are out of scope for this document. -->
 [**TODO**: Extension flag or code for this? Or leave it to be interpreted by the ciphersuites?]
-
-## PQ Entity Authenticity 
-[Need it in both sessions]
 
 ## PQ Confidentiality Only
 
-The default mode of operation for the PQ session is in PQ Confidentiality Only mode. Since a cryptographically relevant quantum computer (CRQC) has not been publicly revealed, the harvest-now-decrypt-later attack suffices as the threat model for the HPQMLS combiner. Under this lense, PQ confidentiality with traditional authenticity are appropriate minimum security goals. Therefore, it follows that the PQ session can be defined as using PQ KEM and classical signatures. 
+The default mode of operation is in PQ Confidentiality Only mode. Since a cryptographically relevant quantum computer (CRQC) has not been publicly revealed, the harvest-now-decrypt-later attack suffices as the threat model for the HPQMLS combiner. Under this lense, PQ confidentiality with traditional authenticity are appropriate minimum security goals. 
+
+By using a PQ KEM to protect the key schedule of the PQ session, we can extend the PQ confidentiality to the standard session's key schedule. Recall, this is done via the inject of the exporter key from the PQ session as a pre-shared key in the traditional session's key schedule  which generates the symmetric group keys used for AEAD and MAC calculations. Even if an adversary is successful in breaking the KEM used in the traditional session, they would be unsuccessful in calculating the group secret without also knowing the PSK value derived from the out-of-band PQ KEM. Therefore, in this mode, the PQ session can be defined as using PQ KEM and traditional signatures for handshake messages while the traditional session uses traditional KEM and signature algorithms for application and handshake messages. 
 
 
+## PQ Confidentiality + Authenticity 
 
-## PQ Confidentiality + Authenticity (for updates)
+The elevated mode of operation is the PQ Confidentiality and Authenticity mode. If a CRQC exists, then the threat model used in the default mode would be too weak. Thus, the default mode would be insufficient to guarantee authenticity of messages from an external CRQC adversary. Recall that authenticity in MLS refers to two types of guarantees: 1) that messages were sent by a member of the group provided by the computed symmetric group key used in AEAD and 2) that a message was sent by a particular user (i.e. non-repudiation) provided by digital signatures. By using a PQ DSA to sign handshake messages non-repudiation is guaranteed against a CRQC adversary. Therefore, in this mode the PQ session MUST use a PQ DSA in addition to PQ KEM ciphersuites for handshake messages (the traditional session remains unchanged). 
 
-The secondary mode of operation for the PQ session is the PQ Confidentiality and Authenticity mode. If a CRQC exists, the default mode would be insufficient to guarantee confidentiality and authenticity of the group key. Therefore, in this mode the PQ session would use PQ signatures as well as PQ KEM ciphersuites. [BH: This only gives PQ authenticity on PQ updates]
+[**TODO:** Move this to security considerations?] 
+If the traditional session remains unchanged from the default mode, a CRQC adversary may forge signatures associated with messages sent in traditional session. However, in terms of group key agreement, this is insufficient to mount anything more than a denial of service attack (e.g. via group state desynchronization). In terms of application messages, while the signature may be forged by an external CRQC adversary, the content (including sender information) is still protected by AEAD which uses the symmetric group key. Thus, only an insider CRQC adversary could actually mount masquerading or forgery attacks which is beyond the scope of this protocol.  
 
-## PQ Confidentiality + Authenticity (Data)
 
-
+<!---## PQ Confidentiality + Hybrid Authenticity
+The highest and most computationally costly mode of operation is to use 
+-->
 # The Combiner Protocol Execution 
 
 The combiner protocol runs two MLS sessions in parallel, synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a Pre-Shared Key (PSK) in the traditional session. This combination process is mandatory for commits to add and remove proposals, in order to maintain synchronization between the sessions. However, it is optional for any other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ combined commits less frequently than the traditional-only commits. The combiner protocol design treats both sessions as black-box interfaces so we only highlight operations requiring synchronizations in this document.
@@ -227,25 +241,17 @@ User removals MUST be done in both PQ and traditional sessions followed by a ful
 
 ## Application Messages
 
-The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent using  the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
+The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent in the traditional session using the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
 
 
 # Security Considerations
 
+## Full Commit Frequency 
 
-**[Done:]** Remark on PQ KEM vs PQ Signatures and PQ Conf/Auth guarantees we get. 
+So long as the full commit flow is followed for group administration actions, PQ security is extended to the traditional session. Therefore, full commits can occur as frequently or infrequently as desired by any given security policy. This results in a flexible and efficient use of compute,  storage, and bandwidth resources for the host by mainly calling partial updates on the traditional MLS session, given that the group membership is stable. Thus, our protocol provides PQ security and can maintain a tighter forward secrecy and post-compromise security window with lower overhead when compared to running a single MLS session that only uses hybrid signatures or only PQ KEM/DSAs. 
 
-**[Done:]** PQ Session with only PQ KEM (Conf) not PQ Sigs (Auth) - we need to flag this as a Hybrid Conf Combiner or Hybrid Conf+Auth combiner 
-
-**[TODO:]** Tighter windows for post compromise and FS windows. 
-
-**[TODO:]** book-keeping operations (for fork resiliency?). 
-
-**[TODO:]** Information leakage with the `gid` value being added to welcome messages
-
-**[Done:]** Consider adding a statement to say how this combiner generalizes combining of two (or more?) arbitrary MLS sessions. 
-
-**[TODO:]** Epoch Agreement (Fork Resiliency) - not sure if this is in scope...
+## Attacks on Authentication
+While message integrity is protected by the symmetric key, non-repudiation attacks (e.g. forgery, impersonation, masquerading) on the digital signature of messages may be possible by a CQRC adversary. Such an attack can cause confusion in group state agreement leading to denial of service or entity authentication of the sender. If this is a concern, we recommend using hybrid PQ DSAs in the traditional session to sign messages. Note, this would negate much of the efficiency gains from using this protocol. 
 
 ## Transport Security 
 Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
