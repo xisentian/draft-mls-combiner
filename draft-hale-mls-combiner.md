@@ -148,6 +148,38 @@ The highest and most computationally costly mode of operation is to use
 
 The combiner protocol runs two MLS sessions in parallel, synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a Pre-Shared Key (PSK) in the traditional session. This combination process is mandatory for commits to add and remove proposals, in order to maintain synchronization between the sessions. However, it is optional for any other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ combined commits less frequently than the traditional-only commits. The combiner protocol design treats both sessions as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
+        
+      
+      PQ Session                       Traditional Session
+      -----------                      -------------------  
+
+        [...] 
+    DeriveSecret(epoch_secret, 
+          |            "Exporter")    
+          |=                                 [...]
+          |   exporter_secret             joiner_secret
+          |                                    |
+          |                                    |
+          |                                    V
+          +----------> <psk_secret (or 0)> --> KDF.Extract
+        [...]                                   |
+                                                |
+                                                +--> DeriveSecret(., "welcome")
+                                                |    = welcome_secret
+                                                |
+                                                V
+                                        ExpandWithLabel(., "epoch", GroupContext_[n], KDF.Nh)
+                                                |
+                                                |
+                                                V
+                                          epoch_secret
+                                                |
+                                                |
+                                                +--> DeriveSecret(., <label>)
+                                                |    = <secret>
+                                              [...]
+    Fig X: The exporter_secret of the PQ session is injected into the key schedule of the 
+    traditional session. 
 ## Commit Flow
 
 Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `exporter_secret` of the PQ session. To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
