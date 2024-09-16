@@ -245,7 +245,7 @@ The elevated mode of operation is the PQ Confidentiality and Authenticity mode. 
 
 The HPQMLSInfo struct contains characterizing information to signal to users that they are participating in a combined session. This is necessary both functionally to allow for group synchronization and as a security measure to prevent downgrading attacks to coax users into parcipating in just one of the two sessions. The `group_id`, `cipher_suite`, and `epoch` from both sessions (`t` for traditional and `pq` for the Post Quantum session) are used as bookkeeping values to validate and synchronize group operations. The `mode` is a boolean value: `0` for the default PQ Confidentiality Only mode and `1` for the PQ Confidentiality and Authenticity mode. 
 
-The HPQMLSInfo struct conforms to the [Safe Extensions API](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html). Recall that an extension is called *safe* if it does not modify base MLS protocol or other MLS extensions beyond using components of the Safe Extension API. This allows security analysis of our HPQMLS Combiner protocol in isolation of the security guarantees of the base MLS protocol to enable composability of guarantees. The HPMLSInfo extension struct SHALL be in the following format: 
+The HPQMLSInfo struct conforms to the Safe Extensions API (see [I-D.ietf-mls-extensions]). Recall that an extension is called *safe* if it does not modify base MLS protocol or other MLS extensions beyond using components of the Safe Extension API. This allows security analysis of our HPQMLS Combiner protocol in isolation of the security guarantees of the base MLS protocol to enable composability of guarantees. The HPMLSInfo extension struct SHALL be in the following format: 
 
 [BH: What's in the clear here? Trad session vs T session notation]
 
@@ -267,9 +267,9 @@ The HPQMLSInfo struct conforms to the [Safe Extensions API](https://messaginglay
 
 ## Key Schedule
 
-The `hpqmls_psk` exporter key derived in the PQ session MUST be derived in accordance with [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-exporting-secrets) guidance on Exporting Secrets. Moreover, it SHALL NOT use the `extension_secret` and MUST be derived from only the `epoch_secret` from the key schedule in [[RFC9420]](https://www.rfc-editor.org/rfc/rfc9420.html). This is to ensure forward secrecy guarantees (see [Security Considerations](#security-considerations)). 
+The `hpqmls_psk` exporter key derived in the PQ session MUST be derived in accordance with the Safe Extensions API guidance (see 2.1.5 Exporting Secrets in [I-D.ietf-mls-extensions]). In particular, it SHALL NOT use the `extension_secret` and MUST be derived from only the `epoch_secret` from the key schedule in [[RFC9420]](https://www.rfc-editor.org/rfc/rfc9420.html). This is to ensure forward secrecy guarantees (see [Security Considerations](#security-considerations)). 
 
-Even though the `hpqmls_psk` is not sent over the wire, members of the HPQMLS session must agree on the value of of which PSK to use. In alignment with the Safe Extensions API policy for PSKs, HPQMLS PSKs used SHALL set `PSKType = 3` and `extension_type = HPQMLS` (see Section 2.1.6 Pre-Shared Keys in [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-pre-shared-keys-psks)). 
+Even though the `hpqmls_psk` is not sent over the wire, members of the HPQMLS session must agree on the value of of which PSK to use. In alignment with the Safe Extensions API policy for PSKs, HPQMLS PSKs used SHALL set `PSKType = 3` and `extension_type = HPQMLS` (see Section 2.1.6 Pre-Shared Keys in [I-D.ietf-mls-extensions]). 
         
       
       PQ Session                       Traditional Session
@@ -340,8 +340,14 @@ The MLS Exporter Label
 # References
 
 ## Normative References (i.e. RFCs)
-[1] <https://www.rfc-editor.org/info/rfc9420> "MLS RFC"
 
+[I-D.ietf-mls-extensions] Robert, R., "The Messaging Layer Security (MLS) Extensions", Work in Progress, Internet-Draft, draft-ietf-mls-extensions-04, 24 April 2024,  <https://datatracker.ietf.org/doc/html/draft-ietf-mls-extensions-04>
+
+[RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, DOI 10.17487/RFC2119, March 1997, <https://www.rfc-editor.org/rfc/rfc2119>.
+
+ [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174, May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+[RFC9420] Barnes, R., Beurdouche, B., Robert, R., Millican, J., Omara, E., and K. Cohn-Gordon, "The Messaging Layer Security (MLS) Protocol", RFC 9420, DOI 10.17487/RFC9420, July 2023 <https://www.rfc-editor.org/rfc/rfc9420>. 
 
 
 ## Informational References 
@@ -353,4 +359,5 @@ TODO
 # Acknowledgments
 {:numbered="false"}
 ## Contributors 
+
 ## Authors 
