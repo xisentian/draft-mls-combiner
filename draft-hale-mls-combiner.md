@@ -26,7 +26,7 @@ workgroup: MLS
 #  type: "Working Group"
 #  mail: WG@example.com
 #  arch: https://example.com/WG
-#  github: TODO
+#  github: https://github.com/xisentian/draft-mls-combiner/blob/main/draft-hale-mls-combiner.md
 #  latest: https://example.com/LATEST
 author:
   - ins: "J. Alwen"
@@ -122,45 +122,11 @@ The highest and most computationally costly mode of operation is to use
 
 The combiner protocol runs two MLS sessions in parallel, synchronizing their group memberships. The two sessions are combined by exporting a secret from the post quantum session and importing it as a Pre-Shared Key (PSK) in the traditional session. This combination process is mandatory for commits to add and remove proposals in order to maintain synchronization between the sessions. However, it is optional for any other commits (e.g. to allow for cheap traditional PCS key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ combined commits less frequently than the traditional-only commits. The combiner protocol design treats both sessions as black-box interfaces so we only highlight operations requiring synchronizations in this document.
 
-The default way to start a HPQMLS combined session is to create a PQ MLS session and then start a traditional MLS session with the exported PSK from the PQ session, as previously mentioned. Alternatively, a combined session can also be created after a traditional MLS session has already been running. This is done through creating a PQ MLS session with the same group members, sending a Welcome message containing the HPQMLS struct in the GroupContext, and then making a FULL commit as described in in the [Commit Flow](#commit-flow) section.
-        
-      
-      PQ Session                       Traditional Session
-      -----------                      -------------------  
-
-        [...] 
-    DeriveSecret(epoch_secret, 
-          |            "hpqmls_export")    
-          | = exporter_secret                 [...]
-          |                               joiner_secret
-          |                                     |
-          |                                     |
-          |                                     V
-          +----------> <psk_secret (or 0)> --> KDF.Extract
-        [...]                                   |
-                                                |
-                                                +--> DeriveSecret(., "welcome")
-                                                |    = welcome_secret
-                                                |
-                                                V
-                                        ExpandWithLabel(., "epoch", GroupContext_[n], KDF.Nh)
-                                                |
-                                                |
-                                                V
-                                          epoch_secret
-                                                |
-                                                |
-                                                +--> DeriveSecret(., <label>)
-                                                |    = <secret>
-                                              [...]
-    Fig X: The exporter_secret of the PQ session is injected into the key schedule of the 
-    traditional session. 
-
-
+The default way to start a HPQMLS combined session is to create a PQ MLS session and then start a traditional MLS session with the exported PSK from the PQ session, as previously mentioned. Alternatively, a combined session can also be created after a traditional MLS session has already been running. This is done through creating a PQ MLS session with the same group members, sending a Welcome message containing the HPQMLSInfo struct in the GroupContext, and then making a FULL commit as described in in the [Commit Flow](#commit-flow) section.
 
 ## Commit Flow
 
-Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `exporter_secret` of the PQ session. To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
+Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `hpqmls_psk` of the PQ session (see [Key Schedule](#key-schedule)). To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
 
                                                          Group
       A                       B                         Channel
@@ -238,12 +204,12 @@ User leaf nodes are first added to the PQ session following the sequence describ
 ### Welcome Message Validation 
 
 
-Since a client must join two sessions, the Welcome messages it receives to each session MUST indicate that it is not sufficient to join only one or the other. Therefore, the HPQMLS struct indicating the GroupID and ciphersuites of the two sessions MUST be included in the Welcome message via serialization as a GroupContext Extension in order to validate joining the combined sessions. All members MUST verify group membership is consistent in both sessions after a join and the new member MUST issue a FULL update commit as described in Fig 1b. 
+Since a client must join two sessions, the Welcome messages it receives to each session MUST indicate that it is not sufficient to join only one or the other. Therefore, the HPQMLSInfo struct indicating the GroupID and ciphersuites of the two sessions MUST be included in the Welcome message via serialization as a GroupContext Extension in order to validate joining the combined sessions. All members MUST verify group membership is consistent in both sessions after a join and the new member MUST issue a FULL update commit as described in Fig 1b. 
 
 
 ### External Joins
 
-External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLS. After joining, the new member MUST issue a FULL update commit as described in Fig 1b. 
+External joins are used by members who join a group without being explicitly added (via a add-commit sequence) by another existing member. The external user MUST join both the PQ session and the traditional session. As stated previously, the GroupInfo used to create the external commit MUST contain the HPQMLSInfo struct. After joining, the new member MUST issue a FULL update commit as described in Fig 1b. 
 
 ## Removing a Group Member
 
@@ -252,13 +218,13 @@ User removals MUST be done in both PQ and traditional sessions followed by a ful
 
 ## Application Messages
 
-The HPQMLS combiner serves only to provide hybrid PQ security to a classical MLS session. Application messages are therefore only sent in the traditional session using the `encryption_secret` provided by the key schedule of the classical session according to Section 15 of RFC9420. 
+HPQMLS combiner provides PQ security the traditional MLS session. Application messages are therefore only sent in the traditional session using the `encryption_secret` provided by the key schedule of the traditional session according to Section 15 of RFC9420. 
 
 # Modes of Operation
 
 Security needs vary by organizations and use-case specific risk tolerance and/or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: PQ confidentiality only or PQ confidentiality and authenticity. By PQ Confidentiality, we refer to the security provided by PQ KEM protected handshake messages in MLS. By PQ authenticity, we refer to non-repudiation guarantees provided by PQ signatures for handshake and application messages. 
 
-The modes of operation are specified by the `mode` flag in the HPQMLS extension and are listed below ordered by least amount of PQ security to most. 
+The modes of operation are specified by the `mode` flag in HPQMLSInfo struct and are listed below ordered by least amount of PQ security to most. 
 
 
 
@@ -275,25 +241,11 @@ The elevated mode of operation is the PQ Confidentiality and Authenticity mode. 
 
 
 
-# Security Considerations
-
-## Full Commit Frequency 
-
-So long as the full commit flow is followed for group administration actions, PQ security is extended to the traditional session. Therefore, full commits can occur as frequently or infrequently as desired by any given security policy. This results in a flexible and efficient use of compute,  storage, and bandwidth resources for the host by mainly calling partial updates on the traditional MLS session, given that the group membership is stable. Thus, our protocol provides PQ security and can maintain a tighter forward secrecy and post-compromise security window with lower overhead when compared to running a single MLS session that only uses hybrid signatures or only PQ KEM/DSAs. 
-
-## Attacks on Authentication
-While message integrity is protected by the symmetric key, non-repudiation attacks (e.g. forgery, impersonation, masquerading) on the digital signature of messages may be possible by a CQRC adversary. Such an attack can cause confusion in group state agreement leading to denial of service or entity authentication of the sender. If this is a concern, we recommend using hybrid PQ DSAs in the traditional session to sign messages. Note, this would negate much of the efficiency gains from using this protocol. 
-
-Digital signatures in the traditional session in the PQ Confidentiality Only mode are susceptible to forgery attacks by a CRQC adversary. However, in terms of group key agreement, this is insufficient to mount anything more than a denial of service attack (e.g. via group state desynchronization). In terms of application messages, while a traditional DSA signature may be forged by an external CRQC adversary, the content (including sender information) is still protected by AEAD which uses the symmetric group key. Thus, only an insider CRQC adversary could actually mount masquerading or forgery attacks which is beyond the scope of this protocol.  
-
-## Transport Security 
-Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
-
 # Extension Requirements to MLS
 
-The HPQMLS struct contains characterizing information to signal to users that they are participating in a combined session. This is necessary both functionally to allow for group synchronization and as a security measure to prevent downgrading attacks to coax users into parcipating in just one of the two sessions. The `group_id`, `cipher_suite`, and `epoch` from both sessions (`t` for traditional and `pq` for the Post Quantum session) are used as bookkeeping values to validate and synchronize group operations. The `mode` is a boolean value: `0` for the default PQ Confidentiality Only mode and `1` for the PQ Confidentiality and Authenticity mode. 
+The HPQMLSInfo struct contains characterizing information to signal to users that they are participating in a combined session. This is necessary both functionally to allow for group synchronization and as a security measure to prevent downgrading attacks to coax users into parcipating in just one of the two sessions. The `group_id`, `cipher_suite`, and `epoch` from both sessions (`t` for traditional and `pq` for the Post Quantum session) are used as bookkeeping values to validate and synchronize group operations. The `mode` is a boolean value: `0` for the default PQ Confidentiality Only mode and `1` for the PQ Confidentiality and Authenticity mode. 
 
-The `HPQMLS` struct conforms to the [Safe Extensions API](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html). Recall that an extension is called safe if it does not modify base MLS protocol or other MLS extensions beyond using components of the Safe Extension API. This allows security analysis of our HPQMLS Combiner protocol in isolation of the security guarantees of the base MLS protocol to enable composability of guarantees. The `HPMLSInfo` extension struct SHALL be in the following format: 
+The HPQMLSInfo struct conforms to the [Safe Extensions API](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html). Recall that an extension is called *safe* if it does not modify base MLS protocol or other MLS extensions beyond using components of the Safe Extension API. This allows security analysis of our HPQMLS Combiner protocol in isolation of the security guarantees of the base MLS protocol to enable composability of guarantees. The HPMLSInfo extension struct SHALL be in the following format: 
 
 [BH: What's in the clear here? Trad session vs T session notation]
 
@@ -310,19 +262,71 @@ The `HPQMLS` struct conforms to the [Safe Extensions API](https://messaginglayer
           CipherSuite pq_cipher_suite; 
           uint64 t_epoch; 
           uint64 pq_epoch;   
-      } HPQMLS
+      } HPQMLSInfo
 
-The Exporter Key derived in the PQ session MUST be derived in accordance with [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-exporting-secrets) guidance on Exporting Secrets. That is, it must be derived with the following function from the `epoch_secret` or `extension_secret` from the key schedule in [[RFC9420]](https://www.rfc-editor.org/rfc/rfc9420.html):
 
-    DeriveExtensionSecret(Secret, Label) = 
-      ExpandWithLabel(Secret, "ExtensionExport" + HPQMLS + " " + Label)
-         
-Even though the Exporter Key, which is used as a PSK for the traditional session, is not sent over the wire, members of the HPQMLS session must agree on the value of it. In alignment with the Safe Extensions API policy for PSKs, HPQMLS PSKs used SHALL set `PSKType = 3` and `extension_type = HPQMLS` (see Section 2.1.6 Pre-Shared Keys in [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-pre-shared-keys-psks)). 
+## Key Schedule
+
+The `hpqmls_psk` exporter key derived in the PQ session MUST be derived in accordance with [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-exporting-secrets) guidance on Exporting Secrets. Moreover, it SHALL NOT use the `extension_secret` and MUST be derived from only the `epoch_secret` from the key schedule in [[RFC9420]](https://www.rfc-editor.org/rfc/rfc9420.html). This is to ensure forward secrecy guarantees (see [Security Considerations](#security-considerations)). 
+
+Even though the `hpqmls_psk` is not sent over the wire, members of the HPQMLS session must agree on the value of of which PSK to use. In alignment with the Safe Extensions API policy for PSKs, HPQMLS PSKs used SHALL set `PSKType = 3` and `extension_type = HPQMLS` (see Section 2.1.6 Pre-Shared Keys in [Safe Extensions](https://messaginglayersecurity.rocks/mls-extensions/draft-ietf-mls-extensions.html#name-pre-shared-keys-psks)). 
+        
+      
+      PQ Session                       Traditional Session
+      ----------                       -------------------  
+
+        [...] 
+    DeriveExtensionSecret(epoch_secret, 
+          |            "hpqmls_export")    
+          | = hpqmls_psk                      [...]
+          |                               joiner_secret
+          |                                     |
+          |                                     |
+          |                                     V
+          +----------> <psk_secret (or 0)> --> KDF.Extract
+        [...]                                   |
+                                                |
+                                                +--> DeriveSecret(., "welcome")
+                                                |    = welcome_secret
+                                                |
+                                                V
+                                        ExpandWithLabel(., "epoch", GroupContext_[n], KDF.Nh)
+                                                |
+                                                |
+                                                V
+                                          epoch_secret
+                                                |
+                                                |
+                                                +--> DeriveSecret(., <label>)
+                                                |    = <secret>
+                                              [...]
+    Fig 3: The hpqmls_psk of the PQ session is injected into the key schedule of the 
+    traditional session using the safe extensions API DeriveExtensionSecret. 
+
+
+
+# Security Considerations
+
+## Full Commit Frequency 
+
+So long as the full commit flow is followed for group administration actions, PQ security is extended to the traditional session. Therefore, full commits can occur as frequently or infrequently as desired by any given security policy. This results in a flexible and efficient use of compute,  storage, and bandwidth resources for the host by mainly calling partial updates on the traditional MLS session, given that the group membership is stable. Thus, our protocol provides PQ security and can maintain a tighter forward secrecy and post-compromise security window with lower overhead when compared to running a single MLS session that only uses hybrid signatures or only PQ KEM/DSAs. 
+
+## Attacks on Authentication
+While message integrity is protected by the symmetric key, non-repudiation attacks (e.g. forgery, impersonation, masquerading) on the digital signature of messages may be possible by a CQRC adversary. Such an attack can cause confusion in group state agreement leading to denial of service or entity authentication of the sender. If this is a concern, we recommend using hybrid PQ DSAs in the traditional session to sign messages. Note, this would negate much of the efficiency gains from using this protocol. 
+
+Digital signatures in the traditional session in the PQ Confidentiality Only mode are susceptible to forgery attacks by a CRQC adversary. However, in terms of group key agreement, this is insufficient to mount anything more than a denial of service attack (e.g. via group state desynchronization). In terms of application messages, while a traditional DSA signature may be forged by an external CRQC adversary, the content (including sender information) is still protected by AEAD which uses the symmetric group key. Thus, only an insider CRQC adversary could actually mount masquerading or forgery attacks which is beyond the scope of this protocol.  
+
+## Forward Secrecy (FS)
+Recall that one of the ways MLS achieves FS is by deleting security sensitive values after they are consumed (e.g. to encrypt or derive other keys/nonces). For example, values such as the `init_secret` or `epoch_secret` are deleted at the *start* of a new epoch. If the MLS `exporter_secret` or the `extension_secret` from the PQ session is used directly as a PSK for the traditional session, then there is a scenario in which an adversary can break FS because these keys are derived *during* an epoch and are not deleted. Therefore, the `hpqmls_psk` must be derived from the `epoch_secret` of the PQ session to ensure FS (see Figure 3). 
+
+## Transport Security 
+Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
 
 
 # IANA Considerations 
 The MLS sessions combined by this protocol conform to the IANA registries listed for MLS RFC9420. 
 
+<!---
 ## MLS Exporter Label
 The MLS Exporter Label 
 
@@ -331,19 +335,17 @@ The MLS Exporter Label
 |:---    |:---       |:----|
 |hpqmls_export| N| This Document
 |hpqmls_psk| N | This Document 
-
+--->
 
 # References
 
-
-
 ## Normative References (i.e. RFCs)
 [1] <https://www.rfc-editor.org/info/rfc9420> "MLS RFC"
-[2] <https://www.rfc-editor.org/info/rfc5246> "TLS RFC"
+
 
 
 ## Informational References 
-J. Alwen, M. Mularczyk, Y. Tselekounis. "Fork-Resilient Continuous Group Key Agreement", 2023. <https://eprint.iacr.org/2023/394>
+TODO
 
 <!--# Appendices -->
 
