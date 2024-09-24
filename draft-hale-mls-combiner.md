@@ -318,11 +318,11 @@ While PQ message integrity is provided by the symmetric key used in AEAD, attack
 If this is a concern, Hybrid PQ DSAs can be used in the traditional session to sign application messages. Since this would negate much of the efficiency gains from using this protocol and denial-of-service attacks can be achieve through more expedious means, such a option is not considered here. 
  
 
-## Forward Secrecy (FS)
-Recall that one of the ways MLS achieves FS is by deleting security sensitive values after they are consumed (e.g. to encrypt or derive other keys/nonces). For example, values such as the `init_secret` or `epoch_secret` are deleted at the *start* of a new epoch. If the MLS `exporter_secret` or the `extension_secret` from the PQ session is used directly as a PSK for the traditional session, then there is a scenario in which an adversary can break FS because these keys are derived *during* an epoch and are not deleted. Therefore, the `hpqmls_psk` must be derived from the `epoch_secret` of the PQ session to ensure FS (see Figure 3). 
+## Forward Secrecy
+Recall that one of the ways MLS achieves forward secrecy is by deleting security sensitive values after they are consumed (e.g. to encrypt or derive other keys/nonces) and the key schedule has entered a new epoch. For example, values such as the `init_secret` or `epoch_secret` are deleted at the *start* of a new epoch. If the MLS `exporter_secret` or the `extension_secret` from the PQ session is used directly as a PSK for the traditional session, against the requirements set above, then there is a potential scenario in which an adversary can break forward secrecy because these keys are derived *during* an epoch and are not deleted. Therefore, the `hpqmls_psk` MUST be derived from the `epoch_secret` of the PQ session to ensure forward secrecy (see Figure 3). 
 
 ## Transport Security 
-Recommendations for preventing denial of service (DoS) attacks, or restricting transmitted messages are inherited from MLS. Furthermore, message integrity and confidentiality is, as for MLS, protected. 
+Recommendations for preventing denial-of-service attacks or restricting transmitted messages are inherited from MLS. 
 
 
 # IANA Considerations 
