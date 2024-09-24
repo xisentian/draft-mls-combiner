@@ -171,7 +171,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the 
 
 ## Adding a User
 
-User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ KeyPackage one containing a PQ public key signed using a PQ DSA, must first be published to the Delivery Service (DS). Then the associated Add Proposal, Commit, and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL Commit combining sequence where a PreSharedKeyID proposal is additionally committed. The joiner MUST issue a FULL commit as soon as possible to acheive PCS. 
+User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ-DSA signed PQ KeyPackage, i.e. containing a PQ public key, must first be published via the Authentication Service (AS). Then the associated add proposal, commit and welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL commit combining sequence where a PreSharedKeyID proposal is additionally committed. The joiner MUST issue a FULL commit as soon as possible to acheive PCS. 
 
 
                                                          Key Package                                    Group
@@ -197,6 +197,7 @@ User leaf nodes are first added to the PQ session following the sequence describ
       Client A adds client B to the group.
       Messages with ' come from the PQ session. Processing Welcome and Commit in the traditional
       sessio requires the PSK exported exported from the PQ session.
+      [TODO: same comment as on other figure]
 
 
 
