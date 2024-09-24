@@ -213,32 +213,31 @@ External joins are used by members who join a group without being explicitly add
 
 ## Removing a Group Member
 
-User removals MUST be done in both PQ and traditional sessions followed by a full update as as described in Fig 1b. Members MUST verify group membership is consistent in both sessions after a removal. 
+User removals MUST be done in both PQ and traditional sessions followed by a FULL Commit Update as as described in Fig 1b. Members MUST verify group membership is consistent in both sessions after a removal. 
 
 
 ## Application Messages
 
-HPQMLS combiner provides PQ security the traditional MLS session. Application messages are therefore only sent in the traditional session using the `encryption_secret` provided by the key schedule of the traditional session according to Section 15 of RFC9420. 
+HPQMLS combiner provides PQ security to the traditional MLS session. Application messages are therefore only sent in the traditional session using the `encryption_secret` provided by the key schedule of the traditional session according to Section 15 of RFC9420. 
 
 # Modes of Operation
 
-Security needs vary by organizations and use-case specific risk tolerance and/or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: PQ confidentiality only or PQ confidentiality and authenticity. By PQ Confidentiality, we refer to the security provided by PQ KEM protected handshake messages in MLS. By PQ authenticity, we refer to non-repudiation guarantees provided by PQ signatures for handshake and application messages. 
-
-The modes of operation are specified by the `mode` flag in HPQMLSInfo struct and are listed below ordered by least amount of PQ security to most. 
+Security needs vary by organizations and system-specific risk tolerance and/or constraints. While this combiner protocol targets combining a PQ session and a traditional session the degree of PQ security may be tuned depending on the use-case: i.e., as PQ Confidentiality Only or both PQ Confidentiality and PQ Authenticity. For PQ confidentiality only, the PQ session MUST use a PQ KEM, while for PQ authenticity, the PQ session MUST use both a PQ KEM and a PQ DSA. 
+The modes of operation are specified by the `mode` flag in HPQMLSInfo struct and are listed below. 
 
 
 
 ## PQ Confidentiality Only
 
-The default mode of operation is in PQ Confidentiality Only mode. Since a cryptographically relevant quantum computer (CRQC) has not been publicly revealed, the harvest-now-decrypt-later attack suffices as the threat model for the HPQMLS combiner. Under this lense, PQ confidentiality with traditional authenticity are appropriate minimum security goals. 
+The default mode of operation is PQ Confidentiality Only mode. This mode addresses the harvest-now-decrypt-later attack, which is a priority under a use case assumption of a future quantum computer. Under this lens, PQ confidentiality with traditional authenticity is an appropriate minimum security goal. 
 
-By using a PQ KEM to protect the key schedule of the PQ session, we can extend the PQ confidentiality to the standard session's key schedule. Recall, this is done via the inject of the exporter key from the PQ session as a pre-shared key in the traditional session's key schedule  which generates the symmetric group keys used for AEAD and MAC calculations. Even if an adversary is successful in breaking the KEM used in the traditional session, they would be unsuccessful in calculating the group secret without also knowing the PSK value derived from the out-of-band PQ KEM. Therefore, in this mode, the PQ session can be defined as using PQ KEM and traditional signatures for handshake messages while the traditional session uses traditional KEM and signature algorithms for application and handshake messages. 
+By using a PQ KEM in the PQ session, we can extend the PQ confidentiality to the standard session's key schedule. Recall, this is done via the inject of the exporter key from the PQ session as a pre-shared key into the traditional session's key schedule. That traditional session's key schedule generates the symmetric group keys used for AEAD and MAC calculations. Even if an adversary is successful in breaking the KEM used in the traditional session, they would be unsuccessful in calculating the group secret without also knowing the PSK value derived from the PQ session. Therefore, in this mode, the PQ session can be defined as using a PQ KEM and traditional signatures for handshake messages while the traditional session uses traditional KEM and traditional signatures for application and handshake messages. Note that while the PSK enables injection of PQ guarantees in the traditional session's key schedule which is also used for AEAD calculations, the lack of PQ signatures in the PQ session means that it is still susceptible to update impersonation. 
 
 
 ## PQ Confidentiality + Authenticity 
 
-The elevated mode of operation is the PQ Confidentiality and Authenticity mode. If a CRQC exists, then the threat model used in the default mode would be too weak. Thus, the default mode would be insufficient to guarantee authenticity of messages from an external CRQC adversary. Recall that authenticity in MLS refers to two types of guarantees: 1) that messages were sent by a member of the group provided by the computed symmetric group key used in AEAD and 2) that a message was sent by a particular user (i.e. non-repudiation) provided by digital signatures. While the symmetric group key used for AEAD in the traditional session remains protected from a CRQC adversary through the PSK from the PQ session, signatures would not be secure against forgery without using a PQ DSA to sign handshake messages to guarantee non-repudiation against a CRQC adversary. Therefore, in this mode the PQ session MUST use a PQ DSA in addition to PQ KEM ciphersuites for handshake messages (the traditional session remains unchanged). 
-
+The elevated mode of operation is the PQ Confidentiality and Authenticity mode. Under a use environment of a cryptographically relevant quantum computer, the threat model used in the default mode would be too weak. Recall that authenticity in MLS refers to two types of guarantees: 1) that messages were sent by a member of the group provided by the computed symmetric group key used in AEAD and 2) that a message was sent by a particular user (i.e. non-repudiation) provided by digital signatures. While the symmetric group key used for AEAD in the traditional session remains protected from a CRQC adversary through the PSK from the PQ session, signatures would not be secure against forgery without using a PQ DSA to sign handshake messages to guarantee non-repudiation against a CRQC adversary. Therefore, in this mode the PQ session MUST use a PQ DSA in addition to PQ KEM ciphersuites for handshake messages (the traditional session remains unchanged). 
+This version of PQ authenticity provides PQ authenticity to the PQ session's MLS commit messages, which in turn provides PQ assurance for the key schedule from which application keys are derived in the traditional session. Application keys are used in an AEAD for protection of MLS application messages and thereby inherit the PQ security. However, it should be noted that PQ non-repudation security is not achieved by the PQ authenticity mode. 
 
 
 # Extension Requirements to MLS
