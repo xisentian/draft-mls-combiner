@@ -124,7 +124,7 @@ The default way to start a HPQMLS combined session is to create a PQ MLS session
 
 ## Commit Flow
 
-Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the `hpqmls_psk` of the PQ session (see [Key Schedule](#key-schedule)). To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for in the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit and the traditional commit (which also includes a PSK proposal) to derive the new epochs in both sessions.  
+Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the traditional session's epoch is updated following the propose-commit sequence from Section 12 of RFC9420. For a FULL commit, a commit is first applied to the PQ session and another commit is applied to the traditional session using a PSK derived from the PQ session using the `hpqmls_psk` label (see [Key Schedule](#key-schedule)). To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for the traditional session's commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ commit to derive a new epoch in the PQ session and then the traditional commit (which also includes the PSK proposal) to derive the new epoch in the traditional session.  
 
                                                          Group
       A                       B                         Channel
