@@ -142,6 +142,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL commit, only the 
         PreSharedKeyID identifies a PSK exported from the PQ
         session and is included in the commit in the classical
         session.
+        [TODO: It is not clear from the figure/caption from what PQ epoch the PSK is derived from as it looks like the commits are simultaneous]
 
                                                                  Group
       A                           B                             Channel
