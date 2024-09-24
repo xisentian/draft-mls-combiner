@@ -98,7 +98,7 @@ The terms MLS client, MLS member, MLS group, Leaf Node, GroupContext, KeyPackage
 
 # Notation 
 
-We use terms from from MLS [RFC9420]. Below, we've restated relevant terms and define new ones: 
+We use terms from from MLS [RFC9420]. Below, we have restated relevant terms and define new ones: 
 
 **Application Message:** A PrivateMessage carrying application data.
 
@@ -108,7 +108,7 @@ We use terms from from MLS [RFC9420]. Below, we've restated relevant terms and d
 
 **Key Encapsulation Mechanism (KEM):**  A key transport protocol that allows two parties to obtain a shared secret based on the receiver's public key. 
 
-**Post Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. 
+**Post-Quantum (PQ) MLS Session:** An MLS session that uses a PQ-KEM construction, such as described by FIPS 203 from NIST. It may optionally also use a PQ-DSA construction, such as described by FIPS 204 from NIST.
 
 **Traditional MLS Session:** An MLS session that uses a Diffie-Hellman (DH) based KEM as described in RFC9180. 
 
