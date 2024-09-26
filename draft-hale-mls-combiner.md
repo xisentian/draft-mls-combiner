@@ -115,9 +115,6 @@ We use terms from from MLS [RFC9420] and PQ Hybrid Terminology [I-D.ietf-pquip-p
 **PQ/T**: A Post-Quantum and Traditional hybrid (protocol).
 
 
-<!---## PQ/T Confidentiality + Hybrid Authenticity
-The highest and most computationally costly mode of operation is to use 
--->
 # The Combiner Protocol Execution 
 
 The hybrid PQ MLS (HPQMLS) combiner protocol runs two MLS sessions in parallel, synchronizing their group memberships. The two sessions are combined by exporting a secret from the PQ session and importing it as a Pre-Shared Key (PSK) into the traditional session. This combination process is mandatory for Commits of Add and Remove proposals in order to maintain synchronization between the sessions. However, it is optional for any other Commits (e.g. to allow for less computationally expensive traditional key rotations). Due to the higher computational costs and output sizes of PQ KEM (and signature) operations, it may be desirable to issue PQ combined (a.k.a. FULL) Commits less frequently than the traditional-only (a.k.a. PARTIAL) Commits. Since FULL Commits introduce PQ security into the MLS key schedule, the overall key schedule remains PQ-secure even when PARTIAL Commits are used. The FULL Commit rate establishes the post-quantum Post-Compromise Security (PCS) window, while the PARTIAL Commit rate can tighten the traditional PCS window even while maintaining PQ security more generally. The combiner protocol design treats both sessions as black-box interfaces so we only highlight operations requiring synchronizations in this document.
@@ -331,17 +328,6 @@ Recommendations for preventing denial-of-service attacks or restricting transmit
 
 # IANA Considerations 
 The MLS sessions combined by this protocol conform to the IANA registries listed for MLS RFC9420. 
-
-<!---
-## MLS Exporter Label
-The MLS Exporter Label 
-
-
-|Label   | Recommended | Reference |
-|:---    |:---       |:----|
-|hpqmls_export| N| This Document
-|hpqmls_psk| N | This Document 
---->
 
 # References
 
