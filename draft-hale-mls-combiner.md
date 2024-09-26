@@ -353,7 +353,7 @@ TODO
 
 
 # Acknowledgments
-{:numbered="false"}
+
 ## Contributors 
 
 ## Authors 
