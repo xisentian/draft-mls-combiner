@@ -126,46 +126,51 @@ The default way to start a HPQMLS combined session is to create a PQ MLS session
 
 ## Commit Flow
 
-Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the traditional session's epoch is updated following the Propose-Commit sequence from Section 12 of RFC9420. For a FULL Commit, a Commit is first applied to the PQ session and another Commit is applied to the traditional session using a PSK derived from the PQ session using the `hpqmls_psk` label (see [Key Schedule](#key-schedule)). To ensure the correct PSK is used, the sender includes information about the PSK in a PreSharedKey proposal for the traditional session's Commit list of proposals (8.4, 8.5 RFC9420). Receivers process the PQ Commit to derive a new epoch in the PQ session and then the traditional Commit (which also includes the PSK proposal) to derive the new epoch in the traditional session.  
+Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the traditional session's epoch is updated following the Propose-Commit sequence from Section 12 of RFC9420. For a FULL Commit, a Commit is first applied to the PQ session and another Commit is applied to the traditional session using a PSK derived from the PQ session using the DeriveExtensionSecret and `hpqmls_psk` label (see [Key Schedule](#key-schedule)). To ensure the correct PSK is imported into the traditional session, the sender includes information about the PSK in a PreSharedKey proposal for the traditional session's Commit list of proposals. The information about the exported PSK is captured (shown '=' in the figures below for illustration purposes) by the PreSharedKeyID struct as detailed in [RFC9420](https://www.rfc-editor.org/rfc/rfc9420.html#name-pre-shared-keys). Receivers process the PQ Commit to derive a new epoch in the PQ session and then the traditional Commit (which also includes the PSK proposal) to derive the new epoch in the traditional session.  
 
-                                                         Group
-      A                       B                         Channel
-    |                         |                            |
-    | Commit'()               |                            |
-    | Commit(PreSharedKeyID)  |                            |
-    |----------------------------------------------------->|
-    |                         |                            |
-    |                         |                 Commit'()  |
-    |                         |    Commit(PreSharedKeyID)  |
-    |<-----------------------------------------------------+
-    |                         |<---------------------------+
+                                                                      Group
+      A                                      B                         Channel
+    |                                        |                            |
+    | Commit'()                              |                            |
+    |    PresharedKeyID =                    |                            |
+    |    DeriveExtensionSecret('hpqmls_psk') |                            |
+    | Commit(PreSharedKeyID)                 |                            |
+    |-------------------------------------------------------------------->|
+    |                                        |                            |
+    |                                        |                 Commit'()  |
+    |                                        |    Commit(PreSharedKeyID)  |
+    |<--------------------------------------------------------------------+
+    |                         |<------------------------------------------+
     Fig 1a. FULL Commit to an empty proposal list.
         Messages with ' are sent in the the PQ session. 
         PreSharedKeyID identifies a PSK exported from the PQ
-        session and is included in the commit in the classical
-        session.
+        session in the new epoch following a Commit'(). The 
+        PreSharedKeyID  is implicitly included in the commit 
+        in the classical session via the PreSharedKey Proposal. 
         [TODO: It is not clear from the figure/caption in 1a and 1b from what PQ epoch the PSK is derived from as it looks like the commits are simultaneous]
 
-                                                                 Group
-      A                           B                             Channel
-    |                             |                                |
-    |                             | Upd'(B)                        |
-    |                             | Upd(B, f)                      |
-    |                             |------------------------------->|
-    |                             |                                |
-    |                             |                        Upd'(B) |
-    |                             |                      Upd(B, f) |
-    |<-------------------------------------------------------------+
-    |                             |<-------------------------------+
-    |                             |                                |
-    | Commit'(Upd')               |                                |
-    | Commit(Upd, PreSharedKeyID) |                                |
-    |------------------------------------------------------------->|
-    |                             |                                |
-    |                             |                  Commit'(Upd') |
-    |                             |    Commit(Upd, PreSharedKeyID) |
-    |<-------------------------------------------------------------+
-    |                             |<-------------------------------+
+                                                                            Group
+      A                                      B                              Channel
+    |                                        |                                |
+    |                                        | Upd'(B)                        |
+    |                                        | Upd(B, f)                      |
+    |                                        |------------------------------->|
+    |                                        |                                |
+    |                                        |                        Upd'(B) |
+    |                                        |                      Upd(B, f) |
+    |<------------------------------------------------------------------------+
+    |                                        |<-------------------------------+
+    |                                        |                                |
+    | Commit'(Upd')                          |                                |
+    |    PresharedKeyID =                    |                                |
+    |    DeriveExtensionSecret('hpqmls_psk') |                                |
+    | Commit(Upd, PreSharedKeyID)            |                                |
+    |------------------------------------------------------------------------>|
+    |                                        |                                |
+    |                                        |                  Commit'(Upd') |
+    |                                        |    Commit(Upd, PreSharedKeyID) |
+    |<------------------------------------------------------------------------+
+    |                             |<------------------------------------------+
     Fig 1b. FULL Commit to an Update proposal from Client B. 
         Messages with ' are sent in the the PQ session.
 
@@ -173,7 +178,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the 
 
 ## Adding a User
 
-User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ-DSA signed PQ KeyPackage, i.e. containing a PQ public key, must first be published via the Distribution Service (DS). Then the associated Commit and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL Commit combining sequence where a PreSharedKeyID proposal is additionally committed. The joiner MUST issue a FULL Commit as soon as possible after joining to acheive PCS.
+User leaf nodes are first added to the PQ session following the sequence described in Section 3 of RFC9420 except using PQ algorithms where HPKE algorithms exist. For example, a PQ-DSA signed PQ KeyPackage, i.e. containing a PQ public key, must first be published via the Distribution Service (DS). Then the associated Commit and Welcome messages will be sent and processed in the PQ session according to Section 12 of RFC9420. The same sequence is repeated in the standard session except following the FULL Commit combining sequence where a PreSharedKeyID proposal is additionally committed. The joiner MUST issue a FULL Commit as soon as possible after joining to achieve PCS.
 
 
                                                          Key Package                                    Group
@@ -184,6 +189,8 @@ User leaf nodes are first added to the PQ session following the sequence describ
     |<--------------------------------------------------------+                                           |
     |                                          |              |                                           |
     | Commit'(Add'(KeyPackageB'))              |              |                                           |
+    |   PresharedKeyID =                       |              |                                           |
+    |   DeriveExtensionSecret('hpqmls_psk')    |              |                                           |
     | Commit(Add(KeyPackageB), PreSharedKeyID) |              |                                           |
     +---------------------------------------------------------------------------------------------------->|
     |                                          |              |                                           |
@@ -237,7 +244,7 @@ The default mode of operation is PQ/T Confidentiality Only mode. This mode provi
 
 ## PQ/T Confidentiality + Authenticity 
 
-The elevated mode of operation is the PQ/T Confidentiality + Authenticity mode. Under a use environment of a cryptographically relevant quantum computer (CRQC), the threat model used in the default mode would be too weak and assurance about update authenticity is required. Recall that authenticity in MLS refers to three types of guarantees: 1) that messages were sent by a member of the group provided by the computed symmetric group key used in AEAD, 2) that key updates were performed by a valid member of the group, and 3) that a message was sent by a particular user provided by digital signatures on messages. While the symmetric group key used for AEAD in the traditional session remains protected from a CRQC adversary through the PSK from the PQ session, signatures would not be secure against forgery without using a PQ DSA to sign handshake messages nor are application messages assured to have non-repudiation against a CRQC adversary. Therefore, in the PQ/T Confidentiality + Authenticity mode, the PQ session MUST use a PQ DSA in addition to PQ KEM ciphersuites for handshake messages (the traditional session remains unchanged). 
+The elevated mode of operation is the PQ/T Confidentiality + Authenticity mode. Under a use environment of a cryptographically relevant quantum computer (CRQC), the threat model used in the default mode would be too weak and assurance about update authenticity is required. Recall that authenticity in MLS refers to three types of guarantees: 1) that messages were sent by a member of the group provided by the computed symmetric group key used in AEAD, 2) that key updates were performed by a valid member of the group, and 3) that a message was sent by a particular user (i.e. non-repudiation) provided by digital signatures on messages. While the symmetric group key used for AEAD in the traditional session remains protected from a CRQC adversary through the PSK from the PQ session, signatures would not be secure against forgery without using a PQ DSA to sign handshake messages nor are application messages assured to have non-repudiation against a CRQC adversary. Therefore, in the PQ/T Confidentiality + Authenticity mode, the PQ session MUST use a PQ DSA in addition to PQ KEM ciphersuites for handshake messages (the traditional session remains unchanged). 
 
 This version of PQ authenticity provides PQ authenticity to the PQ session's MLS commit messages, strengthening assurance for (1) and ensuring (2). These in turn provide PQ assurance for the key schedule from which application keys are derived in the traditional session. Application keys are used in an AEAD for protection of MLS application messages and thereby inherit the PQ security. However, it should be noted that PQ non-repudation security for application messages as described by (3) is not achieved by this mode. Achieving PQ non-repudiation on application messages would require hybrid signatures in the traditional session, with considerations to options described in [I-D.hale-pquip-hybrid-signature-spectrums].  
 
@@ -261,7 +268,7 @@ The HPQMLSInfo struct conforms to the Safe Extensions API (see [I-D.ietf-mls-ext
           CipherSuite t_cipher_suite; 
           CipherSuite pq_cipher_suite; 
           uint64 t_epoch; 
-          uint64 pq_epoch;   
+          uint64 pq_epoch;
       } HPQMLSInfo
 
 
