@@ -128,7 +128,7 @@ The default way to start a HPQMLS combined session is to create a PQ MLS session
 
 Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the traditional session's epoch is updated following the Propose-Commit sequence from Section 12 of RFC9420. For a FULL Commit, a Commit is first applied to the PQ session and another Commit is applied to the traditional session using a PSK derived from the PQ session using the DeriveExtensionSecret and `hpqmls_psk` label (see [Key Schedule](#key-schedule)). To ensure the correct PSK is imported into the traditional session, the sender includes information about the PSK in a PreSharedKey proposal for the traditional session's Commit list of proposals. The information about the exported PSK is captured (shown '=' in the figures below for illustration purposes) by the PreSharedKeyID struct as detailed in [RFC9420](https://www.rfc-editor.org/rfc/rfc9420.html#name-pre-shared-keys). Receivers process the PQ Commit to derive a new epoch in the PQ session and then the traditional Commit (which also includes the PSK proposal) to derive the new epoch in the traditional session.  
 
-                                                                      Group
+                                                                        Group
       A                                      B                         Channel
     |                                        |                            |
     | Commit'()                              |                            |
@@ -140,7 +140,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the 
     |                                        |                 Commit'()  |
     |                                        |    Commit(PreSharedKeyID)  |
     |<--------------------------------------------------------------------+
-    |                         |<------------------------------------------+
+    |                                        |<---------------------------+
     Fig 1a. FULL Commit to an empty proposal list.
         Messages with ' are sent in the the PQ session. 
         PreSharedKeyID identifies a PSK exported from the PQ
@@ -150,7 +150,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the 
         [TODO: It is not clear from the figure/caption in 1a and 1b from what PQ epoch the PSK is derived from as it looks like the commits are simultaneous]
 
                                                                             Group
-      A                                      B                              Channel
+      A                                      B                             Channel
     |                                        |                                |
     |                                        | Upd'(B)                        |
     |                                        | Upd(B, f)                      |
@@ -170,7 +170,7 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the 
     |                                        |                  Commit'(Upd') |
     |                                        |    Commit(Upd, PreSharedKeyID) |
     |<------------------------------------------------------------------------+
-    |                             |<------------------------------------------+
+    |                                        |<-------------------------------+
     Fig 1b. FULL Commit to an Update proposal from Client B. 
         Messages with ' are sent in the the PQ session.
 
