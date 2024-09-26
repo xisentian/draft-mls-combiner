@@ -147,7 +147,6 @@ Commits to proposals MAY be *PARTIAL* or *FULL*. For a PARTIAL Commit, only the 
         session in the new epoch following a Commit'(). The 
         PreSharedKeyID  is implicitly included in the commit 
         in the classical session via the PreSharedKey Proposal. 
-        [TODO: It is not clear from the figure/caption in 1a and 1b from what PQ epoch the PSK is derived from as it looks like the commits are simultaneous]
 
                                                                             Group
       A                                      B                             Channel
@@ -206,7 +205,6 @@ User leaf nodes are first added to the PQ session following the sequence describ
       Client A adds client B to the group.
       Messages with ' come from the PQ session. Processing Welcome and Commit in the traditional
       sessio requires the PSK exported exported from the PQ session.
-      [TODO: same comment as on other figure]
 
 
 
