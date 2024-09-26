@@ -316,11 +316,12 @@ So long as the FULL Commit flow is followed for group administration actions, PQ
 ## Attacks on Authentication
 While PQ message integrity is provided by the symmetric key used in AEAD, attacks on non-repudiation (e.g., source forgery) on application messages may still be possible by a CRQC adversary since only traditional signatures on used after the AEAD. However, in terms of group key agreement, this is insufficient to mount anything more than a denial-of-service attack (e.g. via group state desynchronization). In terms of application messages, a traditional DSA signature may be forged by an external CRQC adversary, but the content (including sender information) is still protected by AEAD which uses the symmetric group key. Thus, an external CRQC adversary can only conduct a false-framing attack, where group members are assured of the authenticity of a message being sent by a group member for the adversary has changed the signature to imply a different sender; it would require an insider CRQC adversary to actually mount a masquerading or forgery attack, which is beyond the scope of this protocol. 
 
-If this is a concern, Hybrid PQ DSAs can be used in the traditional session to sign application messages. Since this would negate much of the efficiency gains from using this protocol and denial-of-service attacks can be achieve through more expedious means, such a option is not considered here. 
+If this is a concern, Hybrid PQ DSAs can be used in the traditional session to sign application messages. Since this would negate much of the efficiency gains from using this protocol and denial-of-service attacks can be achieve through more expeditious means, such a option is not considered here. 
  
 
 ## Forward Secrecy
-Recall that one of the ways MLS achieves forward secrecy is by deleting security sensitive values after they are consumed (e.g. to encrypt or derive other keys/nonces) and the key schedule has entered a new epoch. For example, values such as the `init_secret` or `epoch_secret` are deleted at the *start* of a new epoch. If the MLS `exporter_secret` or the `extension_secret` from the PQ session is used directly as a PSK for the traditional session, against the requirements set above, then there is a potential scenario in which an adversary can break forward secrecy because these keys are derived *during* an epoch and are not deleted. Therefore, the `hpqmls_psk` MUST be derived from the `epoch_secret` of the PQ session to ensure forward secrecy (see Figure 3). 
+Recall that one of the ways MLS achieves forward secrecy is by deleting security sensitive values after they are consumed (e.g. to encrypt or derive other keys/nonces) and the key schedule has entered a new epoch. For example, values such as the `init_secret` or `epoch_secret` are deleted at the *start* of a new epoch. If the MLS `exporter_secret` or the `extension_secret` from the PQ session is used directly as a PSK for the traditional session, against the requirements set above, then there is a potential scenario in which an adversary can break forward secrecy because these keys are derived *during* an epoch and are not deleted. Therefore, the `hpqmls_psk` MUST be derived from the `epoch_secret` of the PQ session (see Figure 3) to ensure forward secrecy. 
+
 
 ## Transport Security 
 Recommendations for preventing denial-of-service attacks or restricting transmitted messages are inherited from MLS. 
@@ -353,7 +354,7 @@ TODO
 
 
 # Acknowledgments
-{:numbered="false"}
+<!-- {:numbered="false"} -->
 ## Contributors 
 
 ## Authors 
